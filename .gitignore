@@ -1,0 +1,20 @@
+# vault-loop runtime files
+.vault-loop.lock
+.vault-loop.log
+.vault-loop-costs.csv
+.vault-loop-skip.txt
+.task-report.md
+.worktrees/
+
+# AI conversation exports (agent never reads these, pure bloat)
+sessions/
+
+# Cloned external repos
+wiki/1.project/contribution-opensource/*/
+
+# Next.js app (songkhla-prices worktree)
+node_modules/
+.next/
+.env.local
+.env*.local
+tsconfig.tsbuildinfo

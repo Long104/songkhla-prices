@@ -1,0 +1,75 @@
+{
+  "common": {
+    "appName": "เทียบราคา",
+    "tagline": "รู้ราคาก่อนไปตลาด",
+    "search": "ค้นหาสินค้า เช่น หมูสามชั้น, ไข่ไก่...",
+    "searchButton": "ค้นหา",
+    "province": "จังหวัด",
+    "cheapest": "ถูกที่สุด",
+    "lastUpdated": "อัพเดทล่าสุด",
+    "unitMismatch": "หน่วยต่างกัน — เทียบราคาอาจไม่ตรงกัน",
+    "noData": "ยังไม่มีข้อมูลราคา",
+    "national": "ราคากลางทั่วประเทศ",
+    "allCategories": "หมวดหมู่ทั้งหมด",
+    "noResults": "ไม่พบสินค้าที่ค้นหา",
+    "products": "สินค้า",
+    "productsCount": "{count} สินค้า",
+    "sourcesCount": "{count} แหล่ง",
+    "cheapestAt": "ถูกสุดที่",
+    "fromPrice": "เริ่มต้นที่",
+    "baht": "บาท",
+    "viewCategory": "ดูหมวดหมู่",
+    "viewPrices": "ดูราคา",
+    "backHome": "กลับหน้าหลัก",
+    "noDataFriendlyTitle": "ยังไม่มีข้อมูลราคาสำหรับสินค้านี้",
+    "noDataFriendlyHint": "ระบบยังไม่พบราคาของสินค้านี้ ลองดูสินค้าอื่นในหมวดเดียวกัน",
+    "noResultsFriendlyTitle": "ไม่พบสินค้า \"{query}\"",
+    "noResultsFriendlyHint": "ลองค้นหาด้วยชื่ออื่น เช่น \"หมู\" \"ไข่\" หรือ \"ข้าว\"",
+    "searchPromptTitle": "ค้นหาสินค้าที่ต้องการ",
+    "searchPromptHint": "พิมพ์ชื่อสินค้า เช่น หมูสามชั้น ไข่ไก่ ข้าวหอมมะลิ",
+    "updatedOn": "อัพเดทเมื่อ {date}"
+  },
+  "categories": {
+    "meat": "เนื้อสัตว์",
+    "vegetables": "ผัก",
+    "rice": "ข้าว",
+    "eggs": "ไข่ & นม",
+    "oil": "น้ำมัน & ไขมัน",
+    "seasoning": "เครื่องปรุง",
+    "fuel": "น้ำมันเชื้อเพลิง",
+    "fruit": "ผลไม้"
+  },
+  "home": {
+    "heroTitle": "เปรียบเทียบราคาของกิน",
+    "heroSubtitle": "เทียบราคาจากทุกแหล่ง รู้ว่าที่ไหนถูกสุด ก่อนออกไปจ่ายตลาด",
+    "shopByCategory": "หมวดหมู่สินค้า",
+    "shopByCategoryHint": "เลือกหมวดที่ต้องการดูราคา",
+    "trendingTitle": "ราคาที่เปลี่ยนวันนี้",
+    "trendingHint": "ราคาล่าสุดจากทุกแหล่งข้อมูล",
+    "trendingEmptyTitle": "วันนี้ยังไม่มีราคาใหม่",
+    "trendingEmptyHint": "ราคาจะอัพเดททุกวันตอนเช้า กลับมาดูใหม่พรุ่งนี้ได้เลย",
+    "viewAll": "ดูทั้งหมด"
+  },
+  "product": {
+    "title": "เทียบราคา",
+    "subtitle": "ราคาจากทุกแหล่ง เรียงจากถูกสุดไปแพงสุด",
+    "source": "แหล่งข้อมูล",
+    "price": "ราคา",
+    "unit": "หน่วย",
+    "date": "อัพเดท",
+    "categoryLabel": "หมวดหมู่"
+  },
+  "search": {
+    "title": "ค้นหาสินค้า",
+    "resultsTitle": "ผลการค้นหา \"{query}\"",
+    "resultsCount": "พบ {count} สินค้า"
+  },
+  "category": {
+    "productsCount": "{count} สินค้าในหมวดนี้"
+  },
+  "footer": {
+    "tagline": "ช่วยให้ทุกบ้านรู้ราคาก่อนไปตลาด — ข้อมูลจากแหล่งภาครัฐ",
+    "dataSources": "แหล่งข้อมูล",
+    "disclaimer": "ราคาอาจมีการเปลี่ยนแปลง ตรวจสอบกับร้านค้าอีกครั้งก่อนซื้อ"
+  }
+}

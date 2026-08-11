@@ -1,0 +1,307 @@
+/**
+ * Database seed script.
+ *
+ * Populates the initial reference data:
+ *  - 5 data sources (government / wholesale)
+ *  - 8 product categories
+ *  - 77 Thai provinces (from provincesSeed)
+ *  - 35 canonical products across the 8 categories
+ *  - product-source mappings (DIT/EPPO real names + mock-source Thai names)
+ *
+ * All inserts use onConflictDoNothing() so the script is safe to re-run.
+ * The only exception: product_source_mappings has no unique constraint, so it
+ * is wiped and re-inserted each run to stay idempotent.
+ *
+ * Usage: pnpm seed
+ */
+import { getDb } from "@/db";
+import {
+  categories,
+  products,
+  productSourceMappings,
+  provinces,
+  sources,
+} from "@/db/schema";
+import { provincesSeed } from "@/lib/provinces";
+
+const sourceSeeds = [
+  {
+    slug: "dit",
+    nameTh: "กรมการค้าภายใน",
+    nameEn: "Department of Internal Trade",
+    url: "https://www.dit.go.th",
+    type: "government",
+  },
+  {
+    slug: "oae",
+    nameTh: "สำนักงานเศรษฐกิจการเกษตร",
+    nameEn: "Office of Agricultural Economics",
+    url: "https://www.oae.go.th",
+    type: "government",
+  },
+  {
+    slug: "taladthai",
+    nameTh: "ตลาดไท",
+    nameEn: "Talad Thai",
+    url: "https://www.taladthai.com",
+    type: "wholesale",
+  },
+  {
+    slug: "simummuang",
+    nameTh: "ตลาดสี่มุมเมือง",
+    nameEn: "Si Mum Muang Market",
+    url: "https://www.simummuangmarket.com",
+    type: "wholesale",
+  },
+  {
+    slug: "eppo",
+    nameTh: "สำนักงานนโยบายและแผนพลังงาน",
+    nameEn: "Energy Policy and Planning Office",
+    url: "https://www.eppo.go.th",
+    type: "government",
+  },
+];
+
+const categorySeeds = [
+  { slug: "meat", nameTh: "เนื้อสัตว์", nameEn: "Meat", icon: "🥩", sortOrder: 1 },
+  { slug: "vegetables", nameTh: "ผัก", nameEn: "Vegetables", icon: "🥬", sortOrder: 2 },
+  { slug: "rice", nameTh: "ข้าว", nameEn: "Rice", icon: "🍚", sortOrder: 3 },
+  { slug: "eggs", nameTh: "ไข่ & นม", nameEn: "Eggs & Dairy", icon: "🥚", sortOrder: 4 },
+  { slug: "oil", nameTh: "น้ำมัน & ไขมัน", nameEn: "Oil & Fat", icon: "🛢️", sortOrder: 5 },
+  { slug: "seasoning", nameTh: "เครื่องปรุง", nameEn: "Seasoning", icon: "🧂", sortOrder: 6 },
+  { slug: "fuel", nameTh: "น้ำมันเชื้อเพลิง", nameEn: "Fuel", icon: "⛽", sortOrder: 7 },
+  { slug: "fruit", nameTh: "ผลไม้", nameEn: "Fruit", icon: "🍎", sortOrder: 8 },
+];
+
+interface ProductSeed {
+  slug: string;
+  nameTh: string;
+  nameEn: string;
+  categorySlug: string;
+}
+
+const productSeeds: ProductSeed[] = [
+  // meat
+  { slug: "pork-belly", nameTh: "หมูสามชั้น", nameEn: "Pork Belly", categorySlug: "meat" },
+  { slug: "pork-shoulder", nameTh: "หมูสะโพก", nameEn: "Pork Shoulder", categorySlug: "meat" },
+  { slug: "pork-mince", nameTh: "หมูสับ", nameEn: "Minced Pork", categorySlug: "meat" },
+  { slug: "chicken-whole", nameTh: "ไก่สด", nameEn: "Whole Chicken", categorySlug: "meat" },
+  { slug: "chicken-grilled", nameTh: "ไก่ย่าง", nameEn: "Grilled Chicken", categorySlug: "meat" },
+  { slug: "beef", nameTh: "เนื้อวัว", nameEn: "Beef", categorySlug: "meat" },
+  // vegetables
+  { slug: "morning-glory", nameTh: "ผักบุ้ง", nameEn: "Morning Glory", categorySlug: "vegetables" },
+  { slug: "chinese-kale", nameTh: "ผักคะน้า", nameEn: "Chinese Kale", categorySlug: "vegetables" },
+  { slug: "long-bean", nameTh: "ถั่วฝักยาว", nameEn: "Long Bean", categorySlug: "vegetables" },
+  { slug: "cucumber", nameTh: "แตงกวา", nameEn: "Cucumber", categorySlug: "vegetables" },
+  { slug: "tomato", nameTh: "มะเขือเทศ", nameEn: "Tomato", categorySlug: "vegetables" },
+  { slug: "chili", nameTh: "พริกขี้หนู", nameEn: "Bird's Eye Chili", categorySlug: "vegetables" },
+  { slug: "chinese-cabbage", nameTh: "ผักกวางตุ้งฮุง", nameEn: "Chinese Cabbage", categorySlug: "vegetables" },
+  // rice
+  { slug: "jasmine-rice", nameTh: "ข้าวหอมมะลิ", nameEn: "Jasmine Rice", categorySlug: "rice" },
+  { slug: "sticky-rice", nameTh: "ข้าวเหนียว", nameEn: "Sticky Rice", categorySlug: "rice" },
+  { slug: "white-rice", nameTh: "ข้าวขาว", nameEn: "White Rice", categorySlug: "rice" },
+  // eggs & dairy
+  { slug: "chicken-egg", nameTh: "ไข่ไก่", nameEn: "Chicken Egg", categorySlug: "eggs" },
+  { slug: "duck-egg", nameTh: "ไข่เป็ด", nameEn: "Duck Egg", categorySlug: "eggs" },
+  { slug: "fresh-milk", nameTh: "นมสด", nameEn: "Fresh Milk", categorySlug: "eggs" },
+  // oil & fat
+  { slug: "palm-oil", nameTh: "น้ำมันปาล์ม", nameEn: "Palm Oil", categorySlug: "oil" },
+  { slug: "soybean-oil", nameTh: "น้ำมันถั่วเหลือง", nameEn: "Soybean Oil", categorySlug: "oil" },
+  // seasoning
+  { slug: "sugar", nameTh: "น้ำตาลทราย", nameEn: "White Sugar", categorySlug: "seasoning" },
+  { slug: "condensed-milk", nameTh: "นมข้นหวาน", nameEn: "Sweetened Condensed Milk", categorySlug: "seasoning" },
+  { slug: "fish-sauce", nameTh: "น้ำปลา", nameEn: "Fish Sauce", categorySlug: "seasoning" },
+  { slug: "salt", nameTh: "เกลือ", nameEn: "Salt", categorySlug: "seasoning" },
+  { slug: "coconut-milk", nameTh: "กะทิ", nameEn: "Coconut Milk", categorySlug: "seasoning" },
+  // fuel
+  { slug: "benzine-95", nameTh: "เบนซิน 95", nameEn: "Benzine 95", categorySlug: "fuel" },
+  { slug: "gasohol-91", nameTh: "แก๊สโซฮอล์ 91", nameEn: "Gasohol 91", categorySlug: "fuel" },
+  { slug: "gasohol-e20", nameTh: "แก๊สโซฮอล์ E20", nameEn: "Gasohol E20", categorySlug: "fuel" },
+  { slug: "diesel", nameTh: "ดีเซล", nameEn: "Diesel", categorySlug: "fuel" },
+  { slug: "lpg", nameTh: "แก๊สหุงต้ม (LPG)", nameEn: "LPG", categorySlug: "fuel" },
+  // fruit
+  { slug: "orange", nameTh: "ส้ม", nameEn: "Orange", categorySlug: "fruit" },
+  { slug: "mango", nameTh: "มะม่วง", nameEn: "Mango", categorySlug: "fruit" },
+  { slug: "banana", nameTh: "กล้วยน้ำว้า", nameEn: "Banana", categorySlug: "fruit" },
+  { slug: "watermelon", nameTh: "แตงโม", nameEn: "Watermelon", categorySlug: "fruit" },
+];
+
+/**
+ * Maps a canonical product to the exact raw name a source emits.
+ * - DIT names are copied verbatim from the pricelist.dit.go.th catalog
+ *   (getdata.php?TYPE=product) so scraped rows match.
+ * - EPPO names are what the eppo scraper emits (PTT retail fuels).
+ * - Mock sources (oae, taladthai, simummuang) emit the canonical Thai name,
+ *   so the mapping reuses productSeeds[].nameTh below.
+ */
+interface MappingSeed {
+  sourceSlug: string;
+  productSlug: string;
+  sourceProductName: string;
+}
+
+const ditMappings: MappingSeed[] = [
+  // meat
+  { sourceSlug: "dit", productSlug: "pork-belly", sourceProductName: "สุกรชำแหละ เนื้อสามชั้น" },
+  { sourceSlug: "dit", productSlug: "pork-shoulder", sourceProductName: "สุกรชำแหละ เนื้อแดง สะโพก (ตัดแต่ง)" },
+  { sourceSlug: "dit", productSlug: "chicken-whole", sourceProductName: "ไก่สดทั้งตัว (รวมเครื่องใน)" },
+  { sourceSlug: "dit", productSlug: "beef", sourceProductName: "เนื้อโค สะโพก" },
+  // eggs & dairy
+  { sourceSlug: "dit", productSlug: "chicken-egg", sourceProductName: "ไข่ไก่ เบอร์ 2" },
+  { sourceSlug: "dit", productSlug: "duck-egg", sourceProductName: "ไข่เป็ด กลาง" },
+  // vegetables
+  { sourceSlug: "dit", productSlug: "chinese-kale", sourceProductName: "ผักคะน้า คละ" },
+  { sourceSlug: "dit", productSlug: "morning-glory", sourceProductName: "ผักบุ้งจีน คละ" },
+  { sourceSlug: "dit", productSlug: "chinese-cabbage", sourceProductName: "ผักกวางตุ้ง คละ" },
+  { sourceSlug: "dit", productSlug: "long-bean", sourceProductName: "ถั่วฝักยาว คละ" },
+  { sourceSlug: "dit", productSlug: "cucumber", sourceProductName: "แตงกวา คละ" },
+  { sourceSlug: "dit", productSlug: "tomato", sourceProductName: "มะเขือเทศผลใหญ่ คละ" },
+  { sourceSlug: "dit", productSlug: "chili", sourceProductName: "พริกขี้หนูสวน (เม็ดกลาง)" },
+  // rice
+  { sourceSlug: "dit", productSlug: "jasmine-rice", sourceProductName: "ข้าวสารเจ้า 100% ข้าวหอม ร้านค้าทั่วไป" },
+  { sourceSlug: "dit", productSlug: "white-rice", sourceProductName: "ข้าวสารเจ้า 100% ธรรมดา ร้านค้าทั่วไป" },
+  { sourceSlug: "dit", productSlug: "sticky-rice", sourceProductName: "ข้าวสารเหนียว สันป่าตอง (เขี้ยวงู) 100%" },
+  // oil & fat
+  { sourceSlug: "dit", productSlug: "palm-oil", sourceProductName: "น้ำมันปาล์มสำเร็จรูป บรรจุขวด1 ลิตร" },
+  { sourceSlug: "dit", productSlug: "soybean-oil", sourceProductName: "น้ำมันถั่วเหลืองบริสุทธิ์ บรรจุขวด 1 ลิตร ตรากุ๊ก" },
+  // fruit
+  { sourceSlug: "dit", productSlug: "orange", sourceProductName: "ส้มเขียวหวาน สายน้ำผึ้ง เบอร์ 4" },
+  { sourceSlug: "dit", productSlug: "mango", sourceProductName: "มะม่วงน้ำดอกไม้ เบอร์ 0" },
+  { sourceSlug: "dit", productSlug: "banana", sourceProductName: "กล้วยน้ำว้า" },
+  { sourceSlug: "dit", productSlug: "watermelon", sourceProductName: "แตงโม พันธุ์กินรี" },
+];
+
+const eppoMappings: MappingSeed[] = [
+  { sourceSlug: "eppo", productSlug: "benzine-95", sourceProductName: "เบนซิน 95" },
+  { sourceSlug: "eppo", productSlug: "gasohol-91", sourceProductName: "แก๊สโซฮอล์ 91" },
+  { sourceSlug: "eppo", productSlug: "gasohol-e20", sourceProductName: "แก๊สโซฮอล์ E20" },
+  { sourceSlug: "eppo", productSlug: "diesel", sourceProductName: "ดีเซล" },
+  { sourceSlug: "eppo", productSlug: "lpg", sourceProductName: "แก๊สหุงต้ม (LPG)" },
+];
+
+/** Products the mock sources (oae, taladthai, simummuang) report on. */
+const MOCK_PRODUCT_SLUGS = [
+  // meat
+  "pork-belly",
+  "pork-shoulder",
+  "pork-mince",
+  "chicken-whole",
+  "chicken-grilled",
+  "beef",
+  // vegetables
+  "morning-glory",
+  "chinese-kale",
+  "long-bean",
+  "cucumber",
+  "tomato",
+  "chili",
+  "chinese-cabbage",
+  // rice
+  "jasmine-rice",
+  "sticky-rice",
+  "white-rice",
+  // eggs & dairy
+  "chicken-egg",
+  "duck-egg",
+  "fresh-milk",
+  // oil & fat
+  "palm-oil",
+  "soybean-oil",
+  // seasoning
+  "sugar",
+  "condensed-milk",
+  "fish-sauce",
+  "salt",
+  "coconut-milk",
+  // fruit
+  "orange",
+  "mango",
+  "banana",
+  "watermelon",
+];
+
+const MOCK_SOURCES = ["oae", "taladthai", "simummuang"] as const;
+
+const nameThBySlug = new Map(productSeeds.map((p) => [p.slug, p.nameTh]));
+
+const mockMappings: MappingSeed[] = MOCK_SOURCES.flatMap((sourceSlug) =>
+  MOCK_PRODUCT_SLUGS.map((productSlug) => ({
+    sourceSlug,
+    productSlug,
+    sourceProductName: nameThBySlug.get(productSlug) ?? productSlug,
+  }))
+);
+
+const mappingSeeds: MappingSeed[] = [...ditMappings, ...eppoMappings, ...mockMappings];
+
+async function main() {
+  const db = getDb();
+  if (!db) {
+    console.error("Database not available: DATABASE_URL is not set. Skipping seed.");
+    process.exit(1);
+  }
+
+  console.log("Seeding sources...");
+  await db.insert(sources).values(sourceSeeds).onConflictDoNothing();
+  console.log(`  Inserted ${sourceSeeds.length} sources (conflicts ignored)`);
+
+  console.log("Seeding categories...");
+  await db.insert(categories).values(categorySeeds).onConflictDoNothing();
+  console.log(`  Inserted ${categorySeeds.length} categories (conflicts ignored)`);
+
+  console.log("Seeding provinces...");
+  await db.insert(provinces).values(provincesSeed).onConflictDoNothing();
+  console.log(`  Inserted ${provincesSeed.length} provinces (conflicts ignored)`);
+
+  console.log("Seeding products...");
+  const categoryRows = await db
+    .select({ id: categories.id, slug: categories.slug })
+    .from(categories);
+  const categoryIdBySlug = new Map(categoryRows.map((c) => [c.slug, c.id]));
+
+  const productValues = productSeeds.map((p) => {
+    const categoryId = categoryIdBySlug.get(p.categorySlug);
+    if (!categoryId) {
+      throw new Error(
+        `Unknown category slug "${p.categorySlug}" for product "${p.slug}"`,
+      );
+    }
+    return {
+      slug: p.slug,
+      nameTh: p.nameTh,
+      nameEn: p.nameEn,
+      categoryId,
+    };
+  });
+  await db.insert(products).values(productValues).onConflictDoNothing();
+  console.log(`  Inserted ${productValues.length} products (conflicts ignored)`);
+
+  console.log("Seeding product-source mappings...");
+  const sourceRows = await db.select({ id: sources.id, slug: sources.slug }).from(sources);
+  const sourceIdBySlug = new Map(sourceRows.map((s) => [s.slug, s.id]));
+  const productRows = await db.select({ id: products.id, slug: products.slug }).from(products);
+  const productIdBySlug = new Map(productRows.map((p) => [p.slug, p.id]));
+
+  // Mappings are reference data owned by this seed and the table has no
+  // unique constraint — wipe and re-insert so the script stays idempotent.
+  await db.delete(productSourceMappings);
+
+  const mappingValues = mappingSeeds.flatMap((m) => {
+    const sourceId = sourceIdBySlug.get(m.sourceSlug);
+    const productId = productIdBySlug.get(m.productSlug);
+    if (!sourceId || !productId) {
+      console.warn(`  Skipping mapping ${m.sourceSlug}/${m.productSlug}: ids not found`);
+      return [];
+    }
+    return { sourceId, productId, sourceProductName: m.sourceProductName };
+  });
+  await db.insert(productSourceMappings).values(mappingValues);
+  console.log(`  Inserted ${mappingValues.length} product-source mappings`);
+
+  console.log("Seed completed successfully");
+}
+
+main().catch((err) => {
+  console.error("Seed failed:", err);
+  process.exit(1);
+});

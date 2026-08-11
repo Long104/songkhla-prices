@@ -1,0 +1,75 @@
+{
+  "common": {
+    "appName": "PriceCompare",
+    "tagline": "Know the price before you shop",
+    "search": "Search products, e.g. pork belly, eggs...",
+    "searchButton": "Search",
+    "province": "Province",
+    "cheapest": "Cheapest",
+    "lastUpdated": "Last updated",
+    "unitMismatch": "Different units — prices may not be directly comparable",
+    "noData": "No price data yet",
+    "national": "National average",
+    "allCategories": "All categories",
+    "noResults": "No products found",
+    "products": "products",
+    "productsCount": "{count} products",
+    "sourcesCount": "{count} sources",
+    "cheapestAt": "Cheapest at",
+    "fromPrice": "From",
+    "baht": "THB",
+    "viewCategory": "Browse categories",
+    "viewPrices": "View prices",
+    "backHome": "Back to home",
+    "noDataFriendlyTitle": "No prices for this product yet",
+    "noDataFriendlyHint": "We haven't found prices for this product yet — try another product in the same category",
+    "noResultsFriendlyTitle": "No products found for \"{query}\"",
+    "noResultsFriendlyHint": "Try another keyword like \"pork\", \"egg\" or \"rice\"",
+    "searchPromptTitle": "Search for a product",
+    "searchPromptHint": "Type a product name, e.g. pork belly, chicken eggs, jasmine rice",
+    "updatedOn": "Updated on {date}"
+  },
+  "categories": {
+    "meat": "Meat",
+    "vegetables": "Vegetables",
+    "rice": "Rice",
+    "eggs": "Eggs & Dairy",
+    "oil": "Oil & Fat",
+    "seasoning": "Seasoning",
+    "fuel": "Fuel",
+    "fruit": "Fruit"
+  },
+  "home": {
+    "heroTitle": "Compare grocery prices",
+    "heroSubtitle": "See every price side by side and find the cheapest before you shop",
+    "shopByCategory": "Shop by category",
+    "shopByCategoryHint": "Pick a category to see prices",
+    "trendingTitle": "Today's price updates",
+    "trendingHint": "Latest prices from all data sources",
+    "trendingEmptyTitle": "No new prices today yet",
+    "trendingEmptyHint": "Prices update every morning — check back tomorrow",
+    "viewAll": "View all"
+  },
+  "product": {
+    "title": "Price comparison",
+    "subtitle": "All prices, sorted cheapest first",
+    "source": "Source",
+    "price": "Price",
+    "unit": "Unit",
+    "date": "Updated",
+    "categoryLabel": "Category"
+  },
+  "search": {
+    "title": "Search products",
+    "resultsTitle": "Results for \"{query}\"",
+    "resultsCount": "{count} products found"
+  },
+  "category": {
+    "productsCount": "{count} products in this category"
+  },
+  "footer": {
+    "tagline": "Helping every family know the price before they shop — data from official sources",
+    "dataSources": "Data Sources",
+    "disclaimer": "Prices may change — please double-check with the store before buying"
+  }
+}
