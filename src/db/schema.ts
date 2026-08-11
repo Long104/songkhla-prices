@@ -23,6 +23,8 @@ export const sources = pgTable("sources", {
   url: varchar("url", { length: 255 }).notNull(),
   /** "government" | "wholesale" */
   type: varchar("type", { length: 20 }).notNull(),
+  /** "retail" | "wholesale" — UI toggle filters comparisons by this field */
+  priceType: varchar("price_type", { length: 20 }).notNull().default("retail"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

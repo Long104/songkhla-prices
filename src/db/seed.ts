@@ -2,10 +2,10 @@
  * Database seed script.
  *
  * Populates the initial reference data:
- *  - 5 data sources (government / wholesale)
- *  - 8 product categories
+ *  - 6 data sources (government / wholesale) with retail/wholesale price type
+ *  - 12 product categories
  *  - 77 Thai provinces (from provincesSeed)
- *  - 35 canonical products across the 8 categories
+ *  - 51 canonical products across the 12 categories
  *  - product-source mappings (DIT/EPPO real names + mock-source Thai names)
  *
  * All inserts use onConflictDoNothing() so the script is safe to re-run.
@@ -15,6 +15,7 @@
  * Usage: pnpm seed
  */
 import { getDb } from "@/db";
+import { eq } from "drizzle-orm";
 import {
   categories,
   products,
@@ -31,6 +32,7 @@ const sourceSeeds = [
     nameEn: "Department of Internal Trade",
     url: "https://www.dit.go.th",
     type: "government",
+    priceType: "retail",
   },
   {
     slug: "oae",
@@ -38,6 +40,7 @@ const sourceSeeds = [
     nameEn: "Office of Agricultural Economics",
     url: "https://www.oae.go.th",
     type: "government",
+    priceType: "wholesale",
   },
   {
     slug: "taladthai",
@@ -45,6 +48,7 @@ const sourceSeeds = [
     nameEn: "Talad Thai",
     url: "https://www.taladthai.com",
     type: "wholesale",
+    priceType: "wholesale",
   },
   {
     slug: "simummuang",
@@ -52,6 +56,7 @@ const sourceSeeds = [
     nameEn: "Si Mum Muang Market",
     url: "https://www.simummuangmarket.com",
     type: "wholesale",
+    priceType: "wholesale",
   },
   {
     slug: "eppo",
@@ -59,6 +64,15 @@ const sourceSeeds = [
     nameEn: "Energy Policy and Planning Office",
     url: "https://www.eppo.go.th",
     type: "government",
+    priceType: "retail",
+  },
+  {
+    slug: "makro",
+    nameTh: "แมคโคร",
+    nameEn: "Makro Pro",
+    url: "https://www.makro.pro",
+    type: "wholesale",
+    priceType: "wholesale",
   },
 ];
 
@@ -71,6 +85,10 @@ const categorySeeds = [
   { slug: "seasoning", nameTh: "เครื่องปรุง", nameEn: "Seasoning", icon: "🧂", sortOrder: 6 },
   { slug: "fuel", nameTh: "น้ำมันเชื้อเพลิง", nameEn: "Fuel", icon: "⛽", sortOrder: 7 },
   { slug: "fruit", nameTh: "ผลไม้", nameEn: "Fruit", icon: "🍎", sortOrder: 8 },
+  { slug: "seafood", nameTh: "อาหารทะเล", nameEn: "Seafood", icon: "🐟", sortOrder: 9 },
+  { slug: "beverages", nameTh: "เครื่องดื่ม", nameEn: "Beverages", icon: "🥤", sortOrder: 10 },
+  { slug: "noodles", nameTh: "ก๋วยเตี๋ยว & บะหมี่", nameEn: "Noodles", icon: "🍜", sortOrder: 11 },
+  { slug: "bakery", nameTh: "เบเกอรี่", nameEn: "Bakery", icon: "🍞", sortOrder: 12 },
 ];
 
 interface ProductSeed {
@@ -124,6 +142,26 @@ const productSeeds: ProductSeed[] = [
   { slug: "mango", nameTh: "มะม่วง", nameEn: "Mango", categorySlug: "fruit" },
   { slug: "banana", nameTh: "กล้วยน้ำว้า", nameEn: "Banana", categorySlug: "fruit" },
   { slug: "watermelon", nameTh: "แตงโม", nameEn: "Watermelon", categorySlug: "fruit" },
+  // seafood
+  { slug: "mackerel", nameTh: "ปลาทู", nameEn: "Short Mackerel", categorySlug: "seafood" },
+  { slug: "black-tiger-shrimp", nameTh: "กุ้งกุลาดำ", nameEn: "Black Tiger Shrimp", categorySlug: "seafood" },
+  { slug: "white-shrimp", nameTh: "กุ้งขาว", nameEn: "White Shrimp", categorySlug: "seafood" },
+  { slug: "squid", nameTh: "ปลาหมึก", nameEn: "Squid", categorySlug: "seafood" },
+  { slug: "blue-crab", nameTh: "ปูม้า", nameEn: "Blue Crab", categorySlug: "seafood" },
+  { slug: "green-mussel", nameTh: "หอยแมลงภั่ง", nameEn: "Green Mussel", categorySlug: "seafood" },
+  { slug: "saba-fish", nameTh: "ปลาสำเตร็ง", nameEn: "Saba Fish", categorySlug: "seafood" },
+  { slug: "tilapia", nameTh: "ปลานิล", nameEn: "Tilapia", categorySlug: "seafood" },
+  // beverages
+  { slug: "drinking-water", nameTh: "น้ำดื่ม", nameEn: "Drinking Water", categorySlug: "beverages" },
+  { slug: "soda", nameTh: "น้ำอัดลม", nameEn: "Soda", categorySlug: "beverages" },
+  { slug: "fruit-juice", nameTh: "น้ำผลไม้", nameEn: "Fruit Juice", categorySlug: "beverages" },
+  // noodles
+  { slug: "instant-noodles", nameTh: "บะหมี่กึ่งสำเร็จรูป", nameEn: "Instant Noodles", categorySlug: "noodles" },
+  { slug: "rice-noodles", nameTh: "เส้นหมี่", nameEn: "Rice Noodles", categorySlug: "noodles" },
+  { slug: "glass-noodles", nameTh: "วุ้นเส้น", nameEn: "Glass Noodles", categorySlug: "noodles" },
+  // bakery
+  { slug: "bread", nameTh: "ขนมปัง", nameEn: "Bread", categorySlug: "bakery" },
+  { slug: "wheat-flour", nameTh: "แป้งสาลี", nameEn: "Wheat Flour", categorySlug: "bakery" },
 ];
 
 /**
@@ -218,6 +256,26 @@ const MOCK_PRODUCT_SLUGS = [
   "mango",
   "banana",
   "watermelon",
+  // seafood
+  "mackerel",
+  "black-tiger-shrimp",
+  "white-shrimp",
+  "squid",
+  "blue-crab",
+  "green-mussel",
+  "saba-fish",
+  "tilapia",
+  // beverages
+  "drinking-water",
+  "soda",
+  "fruit-juice",
+  // noodles
+  "instant-noodles",
+  "rice-noodles",
+  "glass-noodles",
+  // bakery
+  "bread",
+  "wheat-flour",
 ];
 
 const MOCK_SOURCES = ["oae", "taladthai", "simummuang"] as const;
@@ -232,7 +290,40 @@ const mockMappings: MappingSeed[] = MOCK_SOURCES.flatMap((sourceSlug) =>
   }))
 );
 
-const mappingSeeds: MappingSeed[] = [...ditMappings, ...eppoMappings, ...mockMappings];
+/**
+ * Makro sells wholesale quantities, but for consistency with the other mock
+ * sources we use the Thai product name as-is. Real Makro data will introduce
+ * bulk units (บาท/กล่อง 5 กก. etc.) — per-unit normalization is Phase 3.
+ */
+const makroMappings: MappingSeed[] = [
+  // seafood (Makro's primary differentiator)
+  { sourceSlug: "makro", productSlug: "mackerel", sourceProductName: "ปลาทู" },
+  { sourceSlug: "makro", productSlug: "black-tiger-shrimp", sourceProductName: "กุ้งกุลาดำ" },
+  { sourceSlug: "makro", productSlug: "white-shrimp", sourceProductName: "กุ้งขาว" },
+  { sourceSlug: "makro", productSlug: "squid", sourceProductName: "ปลาหมึก" },
+  { sourceSlug: "makro", productSlug: "blue-crab", sourceProductName: "ปูม้า" },
+  { sourceSlug: "makro", productSlug: "green-mussel", sourceProductName: "หอยแมลงภั่ง" },
+  { sourceSlug: "makro", productSlug: "saba-fish", sourceProductName: "ปลาสำเตร็ง" },
+  { sourceSlug: "makro", productSlug: "tilapia", sourceProductName: "ปลานิล" },
+  // dry goods (Makro also covers these in bulk)
+  { sourceSlug: "makro", productSlug: "jasmine-rice", sourceProductName: "ข้าวหอมมะลิ" },
+  { sourceSlug: "makro", productSlug: "white-rice", sourceProductName: "ข้าวขาว" },
+  { sourceSlug: "makro", productSlug: "sugar", sourceProductName: "น้ำตาลทราย" },
+  { sourceSlug: "makro", productSlug: "palm-oil", sourceProductName: "น้ำมันปาล์ม" },
+  { sourceSlug: "makro", productSlug: "soybean-oil", sourceProductName: "น้ำมันถั่วเหลือง" },
+  { sourceSlug: "makro", productSlug: "fish-sauce", sourceProductName: "น้ำปลา" },
+  { sourceSlug: "makro", productSlug: "drinking-water", sourceProductName: "น้ำดื่ม" },
+  { sourceSlug: "makro", productSlug: "instant-noodles", sourceProductName: "บะหมี่กึ่งสำเร็จรูป" },
+  { sourceSlug: "makro", productSlug: "wheat-flour", sourceProductName: "แป้งสาลี" },
+  { sourceSlug: "makro", productSlug: "chicken-egg", sourceProductName: "ไข่ไก่" },
+];
+
+const mappingSeeds: MappingSeed[] = [
+  ...ditMappings,
+  ...eppoMappings,
+  ...mockMappings,
+  ...makroMappings,
+];
 
 async function main() {
   const db = getDb();
@@ -244,6 +335,15 @@ async function main() {
   console.log("Seeding sources...");
   await db.insert(sources).values(sourceSeeds).onConflictDoNothing();
   console.log(`  Inserted ${sourceSeeds.length} sources (conflicts ignored)`);
+
+  // Update priceType for existing sources (onConflictDoNothing won't update)
+  for (const s of sourceSeeds) {
+    await db
+      .update(sources)
+      .set({ priceType: s.priceType })
+      .where(eq(sources.slug, s.slug));
+  }
+  console.log(`  Updated priceType on ${sourceSeeds.length} sources`);
 
   console.log("Seeding categories...");
   await db.insert(categories).values(categorySeeds).onConflictDoNothing();

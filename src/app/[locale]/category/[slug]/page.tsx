@@ -12,7 +12,7 @@ import { eq } from "drizzle-orm";
 import { DEFAULT_PROVINCE_CODE } from "@/lib/provinces";
 import { getProvinceIdByCode, getProductsWithCheapestPrice, type ProductWithCheapestPrice } from "@/db/queries";
 
-const VALID_SLUGS = ["meat", "vegetables", "rice", "eggs", "oil", "seasoning", "fuel", "fruit"];
+const VALID_SLUGS = ["meat", "vegetables", "rice", "eggs", "oil", "seasoning", "fuel", "fruit", "seafood", "beverages", "noodles", "bakery"];
 
 export function generateStaticParams() {
   return VALID_SLUGS.map((slug) => ({ slug }));
@@ -29,6 +29,7 @@ export default async function CategoryPage({
 
   const cookieStore = await cookies();
   const provinceCode = cookieStore.get("province")?.value ?? DEFAULT_PROVINCE_CODE;
+  const priceType = cookieStore.get("priceType")?.value ?? "retail";
 
   let categoryIcon: string | null = null;
   let productList: ProductWithCheapestPrice[] = [];
@@ -49,7 +50,7 @@ export default async function CategoryPage({
         .from(products)
         .innerJoin(categories, eq(products.categoryId, categories.id))
         .where(eq(categories.slug, slug));
-      productList = await getProductsWithCheapestPrice(db, result, provinceId);
+      productList = await getProductsWithCheapestPrice(db, result, provinceId, priceType);
     }
   } catch {
     // DB not available

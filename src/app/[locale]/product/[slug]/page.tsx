@@ -24,6 +24,7 @@ export default async function ProductPage({
 
   const cookieStore = await cookies();
   const provinceCode = cookieStore.get("province")?.value ?? DEFAULT_PROVINCE_CODE;
+  const priceType = cookieStore.get("priceType")?.value ?? "retail";
 
   let product: { nameTh: string; nameEn: string | null; categoryNameTh: string; categorySlug: string; categoryIcon: string | null } | null = null;
   let priceRows: PriceRow[] = [];
@@ -62,7 +63,7 @@ export default async function ProductPage({
           })
           .from(prices)
           .innerJoin(sources, eq(prices.sourceId, sources.id))
-          .where(and(eq(prices.productId, productRow.id), provincePriceFilter(provinceId)));
+          .where(and(eq(prices.productId, productRow.id), provincePriceFilter(provinceId), eq(sources.priceType, priceType)));
 
         priceRows = rawPrices.map((r) => ({
           sourceSlug: r.sourceSlug,

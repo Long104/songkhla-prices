@@ -6,6 +6,7 @@ import { MapPin } from "lucide-react";
 import { CategoryCard } from "@/components/category-card";
 import { SearchBar } from "@/components/search-bar";
 import { ProvinceSelector } from "@/components/province-selector";
+import { PriceTypeToggle } from "@/components/price-type-toggle";
 import { PriceChangesList } from "@/components/price-changes-list";
 import { EmptyState } from "@/components/empty-state";
 import { getDb } from "@/db";
@@ -21,6 +22,10 @@ const CATEGORIES = [
   { slug: "seasoning", icon: "🧂" },
   { slug: "fuel", icon: "⛽" },
   { slug: "fruit", icon: "🍎" },
+  { slug: "seafood", icon: "🐟" },
+  { slug: "beverages", icon: "🥤" },
+  { slug: "noodles", icon: "🍜" },
+  { slug: "bakery", icon: "🍞" },
 ];
 
 export default async function HomePage({
@@ -33,6 +38,7 @@ export default async function HomePage({
 
   const cookieStore = await cookies();
   const provinceCode = cookieStore.get("province")?.value ?? DEFAULT_PROVINCE_CODE;
+  const priceType = cookieStore.get("priceType")?.value ?? "retail";
 
   let counts = new Map<string, number>();
   let changes: PriceChangeItem[] = [];
@@ -43,7 +49,7 @@ export default async function HomePage({
       const provinceId = await getProvinceIdByCode(db, provinceCode);
       const [countRows, changeRows] = await Promise.all([
         getCategoryProductCounts(db),
-        getRecentPriceChanges(db, provinceId, 8),
+        getRecentPriceChanges(db, provinceId, 8, priceType),
       ]);
       counts = new Map(countRows.map((c) => [c.slug, c.count]));
       changes = changeRows;
@@ -86,10 +92,11 @@ function HomeContent({
           </div>
 
           {/* Province selector — prominent under the search */}
-          <div className="mt-5 flex items-center justify-center gap-2">
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
             <MapPin className="h-4 w-4 text-green-600" />
             <span className="text-sm font-medium text-zinc-600">{tc("province")}:</span>
             <ProvinceSelector />
+            <PriceTypeToggle />
           </div>
         </div>
       </section>

@@ -45,6 +45,15 @@ const MOCK_PRICES: Array<{ name: string; price: number; unit: string }> = [
   { name: "มะม่วง", price: 62, unit: "บาท/กก." },
   { name: "กล้วยน้ำว้า", price: 42, unit: "บาท/กก." },
   { name: "แตงโม", price: 26, unit: "บาท/กก." },
+  // seafood (OAE tracks agricultural/marine wholesale)
+  { name: "ปลาทู", price: 78, unit: "บาท/กก." },
+  { name: "กุ้งกุลาดำ", price: 350, unit: "บาท/กก." },
+  { name: "กุ้งขาว", price: 185, unit: "บาท/กก." },
+  { name: "ปลาหมึก", price: 160, unit: "บาท/กก." },
+  { name: "ปูม้า", price: 180, unit: "บาท/กก." },
+  { name: "หอยแมลงภั่ง", price: 58, unit: "บาท/กก." },
+  { name: "ปลาสำเตร็ง", price: 70, unit: "บาท/กก." },
+  { name: "ปลานิล", price: 55, unit: "บาท/กก." },
 ];
 
 export const oaeScraper: Scraper = {

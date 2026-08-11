@@ -51,6 +51,15 @@ const MOCK_PRICES: Array<{ name: string; price: number; unit: string }> = [
   { name: "มะม่วง", price: 60, unit: "บาท/กก." },
   { name: "กล้วยน้ำว้า", price: 41, unit: "บาท/กก." },
   { name: "แตงโม", price: 24, unit: "บาท/กก." },
+  // seafood
+  { name: "ปลาทู", price: 82, unit: "บาท/กก." },
+  { name: "กุ้งกุลาดำ", price: 358, unit: "บาท/กก." },
+  { name: "กุ้งขาว", price: 190, unit: "บาท/กก." },
+  { name: "ปลาหมึก", price: 165, unit: "บาท/กก." },
+  { name: "ปูม้า", price: 185, unit: "บาท/กก." },
+  { name: "หอยแมลงภั่ง", price: 62, unit: "บาท/กก." },
+  { name: "ปลาสำเตร็ง", price: 73, unit: "บาท/กก." },
+  { name: "ปลานิล", price: 58, unit: "บาท/กก." },
 ];
 
 export const simummuangScraper: Scraper = {

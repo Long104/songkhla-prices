@@ -37,7 +37,11 @@
     "oil": "Oil & Fat",
     "seasoning": "Seasoning",
     "fuel": "Fuel",
-    "fruit": "Fruit"
+    "fruit": "Fruit",
+    "seafood": "Seafood",
+    "beverages": "Beverages",
+    "noodles": "Noodles",
+    "bakery": "Bakery"
   },
   "home": {
     "heroTitle": "Compare grocery prices",
@@ -66,6 +70,12 @@
   },
   "category": {
     "productsCount": "{count} products in this category"
+  },
+  "priceType": {
+    "retail": "Retail",
+    "wholesale": "Wholesale",
+    "retailHint": "Retail prices for individual consumers",
+    "wholesaleHint": "Wholesale prices for businesses"
   },
   "footer": {
     "tagline": "Helping every family know the price before they shop — data from official sources",

@@ -28,6 +28,14 @@ export function provincePriceFilter(provinceId: number | null): SQL | undefined 
   return or(eq(prices.provinceId, provinceId), isNull(prices.provinceId));
 }
 
+/**
+ * SQL filter matching prices from sources of the given price type.
+ * "retail" shows only retail sources; "wholesale" shows only wholesale.
+ */
+export function priceTypeFilter(priceType: string): SQL {
+  return eq(sources.priceType, priceType);
+}
+
 export interface ProductWithCheapestPrice {
   id: number;
   slug: string;
@@ -51,7 +59,8 @@ export interface ProductWithCheapestPrice {
 export async function getProductsWithCheapestPrice(
   db: Db,
   productRows: Array<{ id: number; slug: string; nameTh: string; nameEn: string | null }>,
-  provinceId: number | null
+  provinceId: number | null,
+  priceType: string = "retail"
 ): Promise<ProductWithCheapestPrice[]> {
   return Promise.all(
     productRows.map(async (p) => {
@@ -66,7 +75,7 @@ export async function getProductsWithCheapestPrice(
           })
           .from(prices)
           .innerJoin(sources, eq(prices.sourceId, sources.id))
-          .where(and(eq(prices.productId, p.id), provincePriceFilter(provinceId)));
+          .where(and(eq(prices.productId, p.id), provincePriceFilter(provinceId), priceTypeFilter(priceType)));
 
         let cheapestPrice: number | null = null;
         let cheapestUnit: string | null = null;
@@ -153,10 +162,15 @@ export interface PriceChangeItem {
 export async function getRecentPriceChanges(
   db: Db,
   provinceId: number | null,
-  limit = 8
+  limit = 8,
+  priceType: string = "retail"
 ): Promise<PriceChangeItem[]> {
   try {
-    const [latest] = await db.select({ d: max(prices.sourceDate) }).from(prices);
+    const [latest] = await db
+      .select({ d: max(prices.sourceDate) })
+      .from(prices)
+      .innerJoin(sources, eq(prices.sourceId, sources.id))
+      .where(priceTypeFilter(priceType));
     if (!latest?.d) return [];
 
     const rows = await db
@@ -173,7 +187,7 @@ export async function getRecentPriceChanges(
       .from(prices)
       .innerJoin(products, eq(prices.productId, products.id))
       .innerJoin(sources, eq(prices.sourceId, sources.id))
-      .where(and(eq(prices.sourceDate, latest.d), provincePriceFilter(provinceId)));
+      .where(and(eq(prices.sourceDate, latest.d), provincePriceFilter(provinceId), priceTypeFilter(priceType)));
 
     const byProduct = new Map<string, PriceChangeItem>();
     for (const r of rows) {
