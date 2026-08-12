@@ -127,6 +127,12 @@ const PRODUCT_CATEGORY_MAP: Record<string, string[]> = {
   "มะเขือเทศ": ["fruit-vegetables/vegetables/fresh-vegetables"],
   "แตงกวา": ["fruit-vegetables/vegetables/fresh-vegetables"],
   "ถั่วฝักยาว": ["fruit-vegetables/vegetables/fresh-vegetables"],
+  // Household/Personal Care/Pet
+  "ผงซักฟอก": ["household/laundry"],
+  "น้ำยาล้างจาน": ["household/dishwashing"],
+  "แชมพู": ["personal-care/hair-care/shampoo"],
+  "ยาสีฟัน": ["personal-care/oral-care/toothpaste"],
+  "อาหารแมว": ["pet-care/cat-food"],
 };
 
 /**

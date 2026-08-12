@@ -82,6 +82,14 @@ const categorySeeds = [
   { slug: "beverages", nameTh: "เครื่องดื่ม", nameEn: "Beverages", icon: "🥤", sortOrder: 10 },
   { slug: "noodles", nameTh: "ก๋วยเตี๋ยว & บะหมี่", nameEn: "Noodles", icon: "🍜", sortOrder: 11 },
   { slug: "bakery", nameTh: "เบเกอรี่", nameEn: "Bakery", icon: "🍞", sortOrder: 12 },
+  { slug: "household", nameTh: "ของใช้ในบ้าน", nameEn: "Household", icon: "🧹", sortOrder: 13 },
+  { slug: "personal-care", nameTh: "ของใช้ส่วนตัว", nameEn: "Personal Care", icon: "🧴", sortOrder: 14 },
+  { slug: "baby", nameTh: "ของใช้เด็ก", nameEn: "Baby Care", icon: "🍼", sortOrder: 15 },
+  { slug: "pet", nameTh: "อาหาร & ของใช้สัตว์เลี้ยง", nameEn: "Pet Care", icon: "🐱", sortOrder: 16 },
+  { slug: "frozen", nameTh: "อาหารแช่แข็ง", nameEn: "Frozen Foods", icon: "🧊", sortOrder: 17 },
+  { slug: "snacks", nameTh: "ขนมขบเคี้ยว", nameEn: "Snacks", icon: "🍿", sortOrder: 18 },
+  { slug: "coffee-tea", nameTh: "กาแฟ & ชา", nameEn: "Coffee & Tea", icon: "☕", sortOrder: 19 },
+  { slug: "canned-goods", nameTh: "อาหารกระป๋อง & ของแห้ง", nameEn: "Canned Goods", icon: "🥫", sortOrder: 20 },
 ];
 
 interface ProductSeed {
@@ -155,6 +163,42 @@ const productSeeds: ProductSeed[] = [
   // bakery
   { slug: "bread", nameTh: "ขนมปัง", nameEn: "Bread", categorySlug: "bakery" },
   { slug: "wheat-flour", nameTh: "แป้งสาลี", nameEn: "Wheat Flour", categorySlug: "bakery" },
+  // Household
+  { slug: "detergent", nameTh: "ผงซักฟอก", nameEn: "Detergent", categorySlug: "household" },
+  { slug: "dish-soap", nameTh: "น้ำยาล้างจาน", nameEn: "Dish Soap", categorySlug: "household" },
+  { slug: "floor-cleaner", nameTh: "น้ำยาถูพื้น", nameEn: "Floor Cleaner", categorySlug: "household" },
+  { slug: "toilet-cleaner", nameTh: "น้ำยาล้างห้องน้ำ", nameEn: "Toilet Cleaner", categorySlug: "household" },
+  { slug: "toilet-paper", nameTh: "ทิชชู่", nameEn: "Toilet Paper", categorySlug: "household" },
+  // Personal Care
+  { slug: "bar-soap", nameTh: "สบู่ก้อน", nameEn: "Bar Soap", categorySlug: "personal-care" },
+  { slug: "shampoo", nameTh: "แชมพู", nameEn: "Shampoo", categorySlug: "personal-care" },
+  { slug: "toothpaste", nameTh: "ยาสีฟัน", nameEn: "Toothpaste", categorySlug: "personal-care" },
+  { slug: "body-wash", nameTh: "ครีมอาบน้ำ", nameEn: "Body Wash", categorySlug: "personal-care" },
+  { slug: "sanitary-pads", nameTh: "ผ้าอนามัย", nameEn: "Sanitary Pads", categorySlug: "personal-care" },
+  // Baby
+  { slug: "baby-diaper", nameTh: "ผ้าอ้อมเด็ก", nameEn: "Baby Diaper", categorySlug: "baby" },
+  { slug: "baby-formula", nameTh: "นมผง", nameEn: "Baby Formula", categorySlug: "baby" },
+  { slug: "baby-soap", nameTh: "สบู่เด็ก", nameEn: "Baby Soap", categorySlug: "baby" },
+  // Pet
+  { slug: "cat-food", nameTh: "อาหารแมว", nameEn: "Cat Food", categorySlug: "pet" },
+  { slug: "dog-food", nameTh: "อาหารสุนัข", nameEn: "Dog Food", categorySlug: "pet" },
+  { slug: "cat-litter", nameTh: "ทรายแมว", nameEn: "Cat Litter", categorySlug: "pet" },
+  // Frozen
+  { slug: "sausage", nameTh: "ไส้กรอก", nameEn: "Sausage", categorySlug: "frozen" },
+  { slug: "chicken-nuggets", nameTh: "นักเก็ตไก่", nameEn: "Chicken Nuggets", categorySlug: "frozen" },
+  { slug: "frozen-ready-meal", nameTh: "อาหารพร้อมทานแช่แข็ง", nameEn: "Frozen Ready Meal", categorySlug: "frozen" },
+  // Snacks
+  { slug: "potato-chips", nameTh: "มันฝรั่งทอด", nameEn: "Potato Chips", categorySlug: "snacks" },
+  { slug: "biscuits", nameTh: "บิสกิต", nameEn: "Biscuits", categorySlug: "snacks" },
+  { slug: "cookies", nameTh: "คุกกี้", nameEn: "Cookies", categorySlug: "snacks" },
+  // Coffee & Tea
+  { slug: "coffee-3in1", nameTh: "กาแฟ 3in1", nameEn: "Coffee 3in1", categorySlug: "coffee-tea" },
+  { slug: "ground-coffee", nameTh: "กาแฟคั่วบด", nameEn: "Ground Coffee", categorySlug: "coffee-tea" },
+  { slug: "green-tea", nameTh: "ชาเขียว", nameEn: "Green Tea", categorySlug: "coffee-tea" },
+  // Canned Goods
+  { slug: "canned-fish", nameTh: "ปลากระป๋อง", nameEn: "Canned Fish", categorySlug: "canned-goods" },
+  { slug: "canned-fruit", nameTh: "ผลไม้กระป๋อง", nameEn: "Canned Fruit", categorySlug: "canned-goods" },
+  { slug: "pickled-mustard", nameTh: "ผักกาดดอง", nameEn: "Pickled Mustard", categorySlug: "canned-goods" },
 ];
 
 /**
@@ -343,6 +387,10 @@ const lotussMappings: MappingSeed[] = [
   { sourceSlug: "lotuss", productSlug: "palm-oil", sourceProductName: "น้ำมันปาล์ม" },
   { sourceSlug: "lotuss", productSlug: "soybean-oil", sourceProductName: "น้ำมันถั่วเหลือง" },
   { sourceSlug: "lotuss", productSlug: "sugar", sourceProductName: "น้ำตาลทราย" },
+  { sourceSlug: "lotuss", productSlug: "detergent", sourceProductName: "ผงซักฟอก" },
+  { sourceSlug: "lotuss", productSlug: "dish-soap", sourceProductName: "น้ำยาล้างจาน" },
+  { sourceSlug: "lotuss", productSlug: "shampoo", sourceProductName: "แชมพู" },
+  { sourceSlug: "lotuss", productSlug: "toothpaste", sourceProductName: "ยาสีฟัน" },
 ];
 
 const mappingSeeds: MappingSeed[] = [

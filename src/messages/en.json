@@ -41,7 +41,15 @@
     "seafood": "Seafood",
     "beverages": "Beverages",
     "noodles": "Noodles",
-    "bakery": "Bakery"
+    "bakery": "Bakery",
+    "household": "Household",
+    "personal-care": "Personal Care",
+    "baby": "Baby Care",
+    "pet": "Pet Care",
+    "frozen": "Frozen Foods",
+    "snacks": "Snacks",
+    "coffee-tea": "Coffee & Tea",
+    "canned-goods": "Canned Goods"
   },
   "home": {
     "heroTitle": "Compare grocery prices",
