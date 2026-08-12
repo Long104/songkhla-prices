@@ -1,4 +1,10 @@
-export async function fetchRenderedHtml(url: string): Promise<string | null> {
+export async function fetchRenderedHtml(
+  url: string,
+  options?: {
+    gotoOptions?: { waitUntil?: string; timeout?: number };
+    waitForTimeout?: number;
+  }
+): Promise<string | null> {
   const apiKey = process.env.BROWSERLESS_API_KEY;
   if (!apiKey) {
     console.warn("BROWSERLESS_API_KEY is missing.");
@@ -8,11 +14,12 @@ export async function fetchRenderedHtml(url: string): Promise<string | null> {
   try {
     const response = await fetch(`https://chrome.browserless.io/content?token=${apiKey}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         url,
+        gotoOptions: options?.gotoOptions ?? { waitUntil: "networkidle2", timeout: 30000 },
+        waitForTimeout: options?.waitForTimeout ?? 3000,
+        rejectResourceTypes: ["image", "media", "font"],
       }),
     });
 

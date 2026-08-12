@@ -7,21 +7,44 @@ vi.mock("../browserless", () => ({
 }));
 
 describe("lotussScraper", () => {
-  it("scrapes products correctly from mocked HTML", async () => {
+  it("scrapes products correctly using search terms and text splitting", async () => {
     const mockHtml = `
-      <div class="product-card">
-        <h3 class="product-name">Test Product</h3>
-        <span class="price">฿100.00</span>
-      </div>
+      <html>
+        <body>
+          <div>Some content... สบู่หอม ฿59.00 ...</div>
+          <div>ปลากระป๋องตราหอย ฿25.00 ...</div>
+        </body>
+      </html>
     `;
     vi.spyOn(browserless, "fetchRenderedHtml").mockResolvedValue(mockHtml);
 
     const results = await lotussScraper.scrape();
-    // Check if at least one result matches the structure
+
     expect(results.length).toBeGreaterThan(0);
-    const item = results[0];
-    expect(item.sourceProductName).toBe("Test Product");
-    expect(item.price).toBe(100);
-    expect(item.unit).toBe("ชิ้น");
+    
+    // Find our mocked items
+    const soap = results.find((r) => r.sourceProductName.includes("สบู่หอม"));
+    expect(soap).toBeDefined();
+    expect(soap?.price).toBe(59);
+    expect(soap?.unit).toBe("บาท/ชิ้น");
+
+    const fish = results.find((r) => r.sourceProductName.includes("ปลากระป๋องตราหอย"));
+    expect(fish).toBeDefined();
+    expect(fish?.price).toBe(25);
+    expect(fish?.unit).toBe("บาท/ชิ้น");
+  });
+
+  it("calls fetchRenderedHtml with correct options", async () => {
+    const mockFetch = vi.spyOn(browserless, "fetchRenderedHtml").mockResolvedValue("<html></html>");
+    
+    await lotussScraper.scrape();
+    
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining("https://www.lotuss.com/th/search/"),
+      {
+        gotoOptions: { waitUntil: "networkidle2", timeout: 35000 },
+        waitForTimeout: 3000,
+      }
+    );
   });
 });
