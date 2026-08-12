@@ -1,151 +1,136 @@
-import * as cheerio from "cheerio";
+const SIMUMMUANG_API = "https://api.simummuangmarket.com/api/app/products";
+const RATE_LIMIT_MS = 2000;
+const PAGE_LIMIT = 100;
+
 import type { Scraper, ScrapedPrice } from "./types";
-import { fetchHtml, fetchJson, parsePrice } from "./types";
+import { fetchJson } from "./types";
 
-/**
- * Si Mum Muang (ตลาดสี่มุมเมือง wholesale market) — REAL scraper attempt.
- *
- * REAL source status: simummuangmarket.com is a Next.js SPA whose price data
- * loads client-side from api.simummuangmarket.com, which returns 401 "Access
- * token not found" without an account. The public /pricing page renders
- * "แสดงสินค้า 0 จาก 0 รายการ" (0 items) for anonymous visitors.
- *
- * This scraper first attempts the JSON API, falls back to parsing any price
- * table on the public /pricing HTML page, and — because anonymous access is
- * not possible — logs and returns [] without fabricating data.
- */
-
-const SIMUMMUANG_API = "https://api.simummuangmarket.com/api/pricing";
-const SIMUMMUANG_PRICING_PAGE = "https://www.simummuangmarket.com/pricing";
-
-interface SimummuangApiItem {
-  /** Fields are defensive — the exact API shape is only visible behind auth. */
-  name?: unknown;
-  productName?: unknown;
-  product_name?: unknown;
-  price?: unknown;
-  priceValue?: unknown;
-  unit?: unknown;
+interface SmmPriceTier {
+  min: number;
+  max: number;
+}
+interface SmmPrice {
+  small: SmmPriceTier;
+  medium: SmmPriceTier;
+  large: SmmPriceTier;
+}
+interface SmmProduct {
+  th?: { name?: string };
+  en?: { name?: string };
+  prod_unit_id?: { th?: { name?: string } };
+  price?: SmmPrice;
+  isShow?: boolean;
+  isActive?: boolean;
+}
+interface SmmResponse {
+  data: {
+    data: SmmProduct[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+  };
+  statusCode: number;
 }
 
-/**
- * Parse a value from the API response into a price number (or null).
- * Accepts numbers and numeric strings ("85.50", "85,50").
- */
-function toPrice(v: unknown): number | null {
-  if (typeof v === "number" && Number.isFinite(v) && v > 0) return v;
-  if (typeof v === "string") {
-    const num = parsePrice(v.replace(/,/g, ""));
-    return num > 0 ? num : null;
+const PRODUCT_MATCH_MAP: Record<string, string[]> = {
+  "ผักคะน้า": ["คะน้า"],
+  "ผักบุ้ง": ["ผักบุ้ง"],
+  "ถั่วฝักยาว": ["ถั่วฝักยาว"],
+  "แตงกวา": ["แตงกวา"],
+  "มะเขือเทศ": ["มะเขือเทศ"],
+  "พริกขี้หนู": ["พริกขี้หนู"],
+  "ผักกวางตุ้งฮุง": ["กวางตุ้ง"],
+  "ส้ม": ["ส้ม"],
+  "มะม่วง": ["มะม่วง"],
+  "กล้วยน้ำว้า": ["กล้วย"],
+  "แตงโม": ["แตงโม"],
+};
+
+function extractPrice(price: SmmPrice | undefined): number | null {
+  if (!price) return null;
+  // Prefer medium, fall back to large, then small
+  for (const tier of [price.medium, price.large, price.small]) {
+    if (tier && tier.min > 0) return tier.min;
   }
   return null;
 }
 
-/** Parse the API response (array, `{ data: [...] }` or `{ items: [...] }`). */
-function parseApiPrices(payload: unknown): ScrapedPrice[] {
-  const items: SimummuangApiItem[] = [];
-  if (Array.isArray(payload)) {
-    items.push(...(payload as SimummuangApiItem[]));
-  } else if (payload && typeof payload === "object") {
-    const obj = payload as Record<string, unknown>;
-    const data = obj.data ?? obj.items ?? obj.result;
-    if (Array.isArray(data)) items.push(...(data as SimummuangApiItem[]));
-  }
-
-  const results: ScrapedPrice[] = [];
-  for (const item of items) {
-    if (!item || typeof item !== "object") continue;
-    const name = String(item.name ?? item.productName ?? item.product_name ?? "").trim();
-    const price = toPrice(item.price ?? item.priceValue);
-    if (!name || price === null) continue;
-    const unit = String(item.unit ?? "").trim();
-    results.push({
-      sourceProductName: name,
-      price,
-      unit: unit.startsWith("บาท") ? unit : unit ? `บาท/${unit}` : "บาท/กก.",
-      provinceCode: null, // wholesale reference (market at Pathum Thani)
-      sourceDate: new Date(),
-    });
-  }
-  return results;
-}
-
-/**
- * Parse price tables from the public /pricing HTML page. Best-effort: finds
- * `<table>` rows whose cells contain a Thai name + a numeric price, with the
- * unit taken from a "บาท/..." cell when present.
- */
-function parseHtmlPrices(html: string): ScrapedPrice[] {
-  const $ = cheerio.load(html);
-  const results: ScrapedPrice[] = [];
-
-  $("table").each((_, table) => {
-    for (const rowEl of $(table).find("tbody tr, tr").toArray()) {
-      const cells = $(rowEl).find("td, th");
-      if (cells.length < 2) continue;
-
-      let name = "";
-      let price: number | null = null;
-      let unit = "บาท/กก.";
-      for (const cellEl of cells.toArray()) {
-        const text = $(cellEl).text().trim();
-        if (!text) continue;
-        const num = parsePrice(text.replace(/,/g, ""));
-        if (/บาท/.test(text)) {
-          // Prefer the last "บาท/..." cell as the unit column.
-          unit = text;
-        } else if (num > 0 && !/[กก.ล.ฟองขวดกระป๋องตัวชิ้น]/.test(text)) {
-          // A bare numeric cell (price column), not a unit-tagged size.
-          if (price === null) price = num;
-        } else if (!name && /[\u0E00-\u0E7F]/.test(text) && num === 0) {
-          // First Thai-text cell without an embedded number is the name.
-          name = text;
-        }
-      }
-
-      // Fallback: name may sit in the first cell alongside a number (e.g. "หมูสับ 85.00").
-      if (!name) {
-        const firstText = $(cells[0]).text().trim();
-        if (/[\u0E00-\u0E7F]/.test(firstText)) name = firstText;
-      }
-
-      if (name && price !== null && price > 0) {
-        results.push({
-          sourceProductName: name,
-          price,
-          unit: unit.startsWith("บาท") ? unit : `บาท/${unit}`,
-          provinceCode: null,
-          sourceDate: new Date(),
-        });
-      }
-    }
-  });
-
-  return results;
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export const simummuangScraper: Scraper = {
   sourceSlug: "simummuang",
   async scrape(): Promise<ScrapedPrice[]> {
-    // Attempt 1: JSON API.
+    const allProducts: SmmProduct[] = [];
+    let totalPages = 1;
+
     try {
-      const payload = await fetchJson<unknown>(SIMUMMUANG_API);
-      const prices = parseApiPrices(payload);
-      if (prices.length > 0) return prices;
-    } catch {
-      // 401/404/etc — fall through to the HTML page.
+      // Fetch page 1 to get totalPages
+      const initialResponse = await fetchJson<SmmResponse>(
+        `${SIMUMMUANG_API}?page=1&limit=${PAGE_LIMIT}`
+      );
+      if (initialResponse?.data?.data) {
+        allProducts.push(...initialResponse.data.data);
+        totalPages = initialResponse.data.totalPages;
+      }
+
+      // Fetch remaining pages
+      for (let page = 2; page <= totalPages; page++) {
+        await sleep(RATE_LIMIT_MS);
+        try {
+          const response = await fetchJson<SmmResponse>(
+            `${SIMUMMUANG_API}?page=${page}&limit=${PAGE_LIMIT}`
+          );
+          if (response?.data?.data) {
+            allProducts.push(...response.data.data);
+          }
+        } catch (e) {
+          console.error(`[SimumMuang] Failed to fetch page ${page}:`, e);
+        }
+      }
+    } catch (e) {
+      console.error("[SimumMuang] Fatal error fetching products:", e);
+      return [];
     }
 
-    // Attempt 2: public pricing page (renders 0 rows anonymously today).
-    try {
-      const html = await fetchHtml(SIMUMMUANG_PRICING_PAGE);
-      const prices = parseHtmlPrices(html);
-      if (prices.length > 0) return prices;
-    } catch {
-      // fall through — nothing anonymous to scrape
+    const scrapedPrices: ScrapedPrice[] = [];
+
+    for (const [canonicalName, searchTerms] of Object.entries(PRODUCT_MATCH_MAP)) {
+      const matches = allProducts.filter((p) => {
+        const name = p.th?.name || "";
+        return searchTerms.some((term) => name.includes(term));
+      });
+
+      let bestPrice: number | null = null;
+      for (const p of matches) {
+        const price = extractPrice(p.price);
+        if (price !== null) {
+          if (bestPrice === null || price < bestPrice) {
+            bestPrice = price;
+          }
+        }
+      }
+
+      if (bestPrice !== null) {
+        const unitName = allProducts.find((p) => {
+          const name = p.th?.name || "";
+          return searchTerms.some((term) => name.includes(term)) && extractPrice(p.price) === bestPrice;
+        })?.prod_unit_id?.th?.name || "กิโลกรัม";
+
+        scrapedPrices.push({
+          sourceProductName: canonicalName,
+          price: bestPrice,
+          unit: unitName === "กิโลกรัม" ? "บาท/กก." : `บาท/${unitName}`,
+          provinceCode: null,
+          sourceDate: new Date(),
+        });
+      }
     }
 
-    console.log("[SimumMuang] API requires authentication, returning empty");
-    return [];
+    console.log(
+      `[SimumMuang] Fetched ${allProducts.length} products across ${totalPages} pages, matched ${scrapedPrices.length} tracked products.`
+    );
+    return scrapedPrices;
   },
 };
