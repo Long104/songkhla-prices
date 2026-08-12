@@ -2,11 +2,11 @@
  * Database seed script.
  *
  * Populates the initial reference data:
- *  - 6 data sources (government / wholesale) with retail/wholesale price type
+ *  - 5 data sources (government / supermarket / wholesale) with retail/wholesale price type
  *  - 12 product categories
  *  - 77 Thai provinces (from provincesSeed)
  *  - 51 canonical products across the 12 categories
- *  - product-source mappings (DIT/EPPO real names + mock-source Thai names)
+ *  - product-source mappings (DIT/EPPO real names + Makro/Si Mum Muang/Lotus's Thai names)
  *
  * All inserts use onConflictDoNothing() so the script is safe to re-run.
  * The only exception: product_source_mappings has no unique constraint, so it
@@ -35,22 +35,6 @@ const sourceSeeds = [
     priceType: "retail",
   },
   {
-    slug: "oae",
-    nameTh: "สำนักงานเศรษฐกิจการเกษตร",
-    nameEn: "Office of Agricultural Economics",
-    url: "https://www.oae.go.th",
-    type: "government",
-    priceType: "wholesale",
-  },
-  {
-    slug: "taladthai",
-    nameTh: "ตลาดไท",
-    nameEn: "Talad Thai",
-    url: "https://www.taladthai.com",
-    type: "wholesale",
-    priceType: "wholesale",
-  },
-  {
     slug: "simummuang",
     nameTh: "ตลาดสี่มุมเมือง",
     nameEn: "Si Mum Muang Market",
@@ -71,8 +55,17 @@ const sourceSeeds = [
     nameTh: "แมคโคร",
     nameEn: "Makro Pro",
     url: "https://www.makro.pro",
-    type: "wholesale",
+    // Makro is wholesale but functions as a supermarket for our comparison.
+    type: "supermarket",
     priceType: "wholesale",
+  },
+  {
+    slug: "lotuss",
+    nameTh: "โลตัส",
+    nameEn: "Lotus's",
+    url: "https://www.lotuss.com",
+    type: "supermarket",
+    priceType: "retail",
   },
 ];
 
@@ -169,8 +162,9 @@ const productSeeds: ProductSeed[] = [
  * - DIT names are copied verbatim from the pricelist.dit.go.th catalog
  *   (getdata.php?TYPE=product) so scraped rows match.
  * - EPPO names are what the eppo scraper emits (PTT retail fuels).
- * - Mock sources (oae, taladthai, simummuang) emit the canonical Thai name,
- *   so the mapping reuses productSeeds[].nameTh below.
+ * - Makro/Lotus's names are what their scrapers emit (Thai product titles).
+ * - Si Mum Muang emits the canonical Thai name, so the mapping reuses
+ *   productSeeds[].nameTh below.
  */
 interface MappingSeed {
   sourceSlug: string;
@@ -217,7 +211,7 @@ const eppoMappings: MappingSeed[] = [
   { sourceSlug: "eppo", productSlug: "lpg", sourceProductName: "แก๊สหุงต้ม (LPG)" },
 ];
 
-/** Products the mock sources (oae, taladthai, simummuang) report on. */
+/** Products the Si Mum Muang API reports on (Thai canonical names). */
 const MOCK_PRODUCT_SLUGS = [
   // meat
   "pork-belly",
@@ -278,20 +272,16 @@ const MOCK_PRODUCT_SLUGS = [
   "wheat-flour",
 ];
 
-const MOCK_SOURCES = ["oae", "taladthai", "simummuang"] as const;
-
 const nameThBySlug = new Map(productSeeds.map((p) => [p.slug, p.nameTh]));
 
-const mockMappings: MappingSeed[] = MOCK_SOURCES.flatMap((sourceSlug) =>
-  MOCK_PRODUCT_SLUGS.map((productSlug) => ({
-    sourceSlug,
-    productSlug,
-    sourceProductName: nameThBySlug.get(productSlug) ?? productSlug,
-  }))
-);
+const simummuangMappings: MappingSeed[] = MOCK_PRODUCT_SLUGS.map((productSlug) => ({
+  sourceSlug: "simummuang",
+  productSlug,
+  sourceProductName: nameThBySlug.get(productSlug) ?? productSlug,
+}));
 
 /**
- * Makro sells wholesale quantities, but for consistency with the other mock
+ * Makro sells wholesale quantities, but for consistency with the other
  * sources we use the Thai product name as-is. Real Makro data will introduce
  * bulk units (บาท/กล่อง 5 กก. etc.) — per-unit normalization is Phase 3.
  */
@@ -316,13 +306,51 @@ const makroMappings: MappingSeed[] = [
   { sourceSlug: "makro", productSlug: "instant-noodles", sourceProductName: "บะหมี่กึ่งสำเร็จรูป" },
   { sourceSlug: "makro", productSlug: "wheat-flour", sourceProductName: "แป้งสาลี" },
   { sourceSlug: "makro", productSlug: "chicken-egg", sourceProductName: "ไข่ไก่" },
+  // Meat
+  { sourceSlug: "makro", productSlug: "pork-mince", sourceProductName: "หมูสับ" },
+  { sourceSlug: "makro", productSlug: "pork-belly", sourceProductName: "หมูสามชั้น" },
+  { sourceSlug: "makro", productSlug: "chicken-whole", sourceProductName: "ไก่สด" },
+  { sourceSlug: "makro", productSlug: "beef", sourceProductName: "เนื้อวัว" },
+  // Vegetables
+  { sourceSlug: "makro", productSlug: "chinese-kale", sourceProductName: "ผักคะน้า" },
+  { sourceSlug: "makro", productSlug: "morning-glory", sourceProductName: "ผักบุ้ง" },
+  { sourceSlug: "makro", productSlug: "chili", sourceProductName: "พริกขี้หนู" },
+  { sourceSlug: "makro", productSlug: "tomato", sourceProductName: "มะเขือเทศ" },
+  { sourceSlug: "makro", productSlug: "cucumber", sourceProductName: "แตงกวา" },
+  { sourceSlug: "makro", productSlug: "long-bean", sourceProductName: "ถั่วฝักยาว" },
+];
+
+/**
+ * Lotus's is a full supermarket — same product coverage as Makro plus the
+ * retail staples DIT tracks (rice, eggs, oil, sugar). Thai names are what the
+ * Lotus's BFF emits.
+ */
+const lotussMappings: MappingSeed[] = [
+  { sourceSlug: "lotuss", productSlug: "pork-belly", sourceProductName: "หมูสามชั้น" },
+  { sourceSlug: "lotuss", productSlug: "pork-mince", sourceProductName: "หมูสับ" },
+  { sourceSlug: "lotuss", productSlug: "chicken-whole", sourceProductName: "ไก่สด" },
+  { sourceSlug: "lotuss", productSlug: "beef", sourceProductName: "เนื้อวัว" },
+  { sourceSlug: "lotuss", productSlug: "chinese-kale", sourceProductName: "ผักคะน้า" },
+  { sourceSlug: "lotuss", productSlug: "morning-glory", sourceProductName: "ผักบุ้ง" },
+  { sourceSlug: "lotuss", productSlug: "chili", sourceProductName: "พริกขี้หนู" },
+  { sourceSlug: "lotuss", productSlug: "tomato", sourceProductName: "มะเขือเทศ" },
+  { sourceSlug: "lotuss", productSlug: "cucumber", sourceProductName: "แตงกวา" },
+  { sourceSlug: "lotuss", productSlug: "long-bean", sourceProductName: "ถั่วฝักยาว" },
+  { sourceSlug: "lotuss", productSlug: "mackerel", sourceProductName: "ปลาทู" },
+  { sourceSlug: "lotuss", productSlug: "jasmine-rice", sourceProductName: "ข้าวหอมมะลิ" },
+  { sourceSlug: "lotuss", productSlug: "white-rice", sourceProductName: "ข้าวขาว" },
+  { sourceSlug: "lotuss", productSlug: "chicken-egg", sourceProductName: "ไข่ไก่" },
+  { sourceSlug: "lotuss", productSlug: "palm-oil", sourceProductName: "น้ำมันปาล์ม" },
+  { sourceSlug: "lotuss", productSlug: "soybean-oil", sourceProductName: "น้ำมันถั่วเหลือง" },
+  { sourceSlug: "lotuss", productSlug: "sugar", sourceProductName: "น้ำตาลทราย" },
 ];
 
 const mappingSeeds: MappingSeed[] = [
   ...ditMappings,
   ...eppoMappings,
-  ...mockMappings,
   ...makroMappings,
+  ...simummuangMappings,
+  ...lotussMappings,
 ];
 
 async function main() {
@@ -336,14 +364,14 @@ async function main() {
   await db.insert(sources).values(sourceSeeds).onConflictDoNothing();
   console.log(`  Inserted ${sourceSeeds.length} sources (conflicts ignored)`);
 
-  // Update priceType for existing sources (onConflictDoNothing won't update)
+  // Update priceType/type for existing sources (onConflictDoNothing won't update)
   for (const s of sourceSeeds) {
     await db
       .update(sources)
-      .set({ priceType: s.priceType })
+      .set({ priceType: s.priceType, type: s.type })
       .where(eq(sources.slug, s.slug));
   }
-  console.log(`  Updated priceType on ${sourceSeeds.length} sources`);
+  console.log(`  Updated priceType/type on ${sourceSeeds.length} sources`);
 
   console.log("Seeding categories...");
   await db.insert(categories).values(categorySeeds).onConflictDoNothing();

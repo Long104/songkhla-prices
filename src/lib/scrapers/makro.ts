@@ -72,8 +72,9 @@ async function detectBuildId(): Promise<string> {
 
 /* ---------- Step 3: Category fetcher with rate limiting ---------- */
 
-// Categories to scrape are derived from PRODUCT_CATEGORY_MAP (Step 4) — the
-// same 11 slugs: seafood ×5, dry grocery ×5, beverages ×1.
+// Categories to scrape are derived from PRODUCT_CATEGORY_MAP (Step 4) — 15
+// unique slugs: seafood ×5, dry grocery ×5, beverages ×1, meat ×3 (pork,
+// poultry, beef), vegetables ×1.
 
 const RATE_LIMIT_MS = 1500; // 1.5 seconds between requests
 
@@ -113,6 +114,19 @@ const PRODUCT_CATEGORY_MAP: Record<string, string[]> = {
   "บะหมี่กึ่งสำเร็จรูป": ["dry-grocery/seasoning-and-spices"],
   "แป้งสาลี": ["dry-grocery/flour"],
   "ไข่ไก่": ["dry-grocery/eggs"],
+  // Meat — specific subcategories for better matching (verified Aug 2026:
+  // `fresh-food/meat-poultry` returns 200 but found=0; use these instead)
+  "หมูสับ": ["meat/pork"],
+  "หมูสามชั้น": ["meat/pork"],
+  "ไก่สด": ["meat/poultry"],
+  "เนื้อวัว": ["meat/beef"],
+  // Vegetables
+  "ผักคะน้า": ["fruit-vegetables/vegetables/fresh-vegetables"],
+  "ผักบุ้ง": ["fruit-vegetables/vegetables/fresh-vegetables"],
+  "พริกขี้หนู": ["fruit-vegetables/vegetables/fresh-vegetables"],
+  "มะเขือเทศ": ["fruit-vegetables/vegetables/fresh-vegetables"],
+  "แตงกวา": ["fruit-vegetables/vegetables/fresh-vegetables"],
+  "ถั่วฝักยาว": ["fruit-vegetables/vegetables/fresh-vegetables"],
 };
 
 /**

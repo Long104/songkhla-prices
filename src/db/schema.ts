@@ -12,8 +12,8 @@ import {
 } from "drizzle-orm/pg-core";
 
 /**
- * Data sources (government / wholesale) that prices come from.
- * slug values: "dit", "oae", "taladthai", "simummuang", "eppo"
+ * Data sources (government / supermarket / wholesale) that prices come from.
+ * slug values: "dit", "eppo", "makro", "lotuss", "simummuang"
  */
 export const sources = pgTable("sources", {
   id: serial("id").primaryKey(),
@@ -21,7 +21,7 @@ export const sources = pgTable("sources", {
   nameTh: varchar("name_th", { length: 100 }).notNull(),
   nameEn: varchar("name_en", { length: 100 }).notNull(),
   url: varchar("url", { length: 255 }).notNull(),
-  /** "government" | "wholesale" */
+  /** "government" | "supermarket" | "wholesale" */
   type: varchar("type", { length: 20 }).notNull(),
   /** "retail" | "wholesale" — UI toggle filters comparisons by this field */
   priceType: varchar("price_type", { length: 20 }).notNull().default("retail"),
