@@ -70,26 +70,30 @@ const sourceSeeds = [
 ];
 
 const categorySeeds = [
-  { slug: "meat", nameTh: "เนื้อสัตว์", nameEn: "Meat", icon: "🥩", sortOrder: 1 },
-  { slug: "vegetables", nameTh: "ผัก", nameEn: "Vegetables", icon: "🥬", sortOrder: 2 },
-  { slug: "rice", nameTh: "ข้าว", nameEn: "Rice", icon: "🍚", sortOrder: 3 },
-  { slug: "eggs", nameTh: "ไข่ & นม", nameEn: "Eggs & Dairy", icon: "🥚", sortOrder: 4 },
-  { slug: "oil", nameTh: "น้ำมัน & ไขมัน", nameEn: "Oil & Fat", icon: "🛢️", sortOrder: 5 },
-  { slug: "seasoning", nameTh: "เครื่องปรุง", nameEn: "Seasoning", icon: "🧂", sortOrder: 6 },
-  { slug: "fuel", nameTh: "น้ำมันเชื้อเพลิง", nameEn: "Fuel", icon: "⛽", sortOrder: 7 },
-  { slug: "fruit", nameTh: "ผลไม้", nameEn: "Fruit", icon: "🍎", sortOrder: 8 },
-  { slug: "seafood", nameTh: "อาหารทะเล", nameEn: "Seafood", icon: "🐟", sortOrder: 9 },
-  { slug: "beverages", nameTh: "เครื่องดื่ม", nameEn: "Beverages", icon: "🥤", sortOrder: 10 },
-  { slug: "noodles", nameTh: "ก๋วยเตี๋ยว & บะหมี่", nameEn: "Noodles", icon: "🍜", sortOrder: 11 },
-  { slug: "bakery", nameTh: "เบเกอรี่", nameEn: "Bakery", icon: "🍞", sortOrder: 12 },
-  { slug: "household", nameTh: "ของใช้ในบ้าน", nameEn: "Household", icon: "🧹", sortOrder: 13 },
-  { slug: "personal-care", nameTh: "ของใช้ส่วนตัว", nameEn: "Personal Care", icon: "🧴", sortOrder: 14 },
-  { slug: "baby", nameTh: "ของใช้เด็ก", nameEn: "Baby Care", icon: "🍼", sortOrder: 15 },
-  { slug: "pet", nameTh: "อาหาร & ของใช้สัตว์เลี้ยง", nameEn: "Pet Care", icon: "🐱", sortOrder: 16 },
-  { slug: "frozen", nameTh: "อาหารแช่แข็ง", nameEn: "Frozen Foods", icon: "🧊", sortOrder: 17 },
-  { slug: "snacks", nameTh: "ขนมขบเคี้ยว", nameEn: "Snacks", icon: "🍿", sortOrder: 18 },
-  { slug: "coffee-tea", nameTh: "กาแฟ & ชา", nameEn: "Coffee & Tea", icon: "☕", sortOrder: 19 },
-  { slug: "canned-goods", nameTh: "อาหารกระป๋อง & ของแห้ง", nameEn: "Canned Goods", icon: "🥫", sortOrder: 20 },
+  { slug: "pork", nameTh: "หมู", nameEn: "Pork", icon: "🥓", sortOrder: 1 },
+  { slug: "chicken", nameTh: "ไก่", nameEn: "Chicken", icon: "🍗", sortOrder: 2 },
+  { slug: "beef", nameTh: "เนื้อวัว", nameEn: "Beef", icon: "🥩", sortOrder: 3 },
+  { slug: "vegetables", nameTh: "ผัก", nameEn: "Vegetables", icon: "🥬", sortOrder: 4 },
+  { slug: "rice", nameTh: "ข้าว", nameEn: "Rice", icon: "🍚", sortOrder: 5 },
+  { slug: "eggs", nameTh: "ไข่ & นม", nameEn: "Eggs & Dairy", icon: "🥚", sortOrder: 6 },
+  { slug: "oil", nameTh: "น้ำมัน & ไขมัน", nameEn: "Oil & Fat", icon: "🛢️", sortOrder: 7 },
+  { slug: "seasoning", nameTh: "เครื่องปรุง", nameEn: "Seasoning", icon: "🧂", sortOrder: 8 },
+  { slug: "fuel", nameTh: "น้ำมันเชื้อเพลิง", nameEn: "Fuel", icon: "⛽", sortOrder: 9 },
+  { slug: "fruit", nameTh: "ผลไม้", nameEn: "Fruit", icon: "🍎", sortOrder: 10 },
+  { slug: "fish", nameTh: "ปลา", nameEn: "Fish", icon: "🐟", sortOrder: 11 },
+  { slug: "shrimp", nameTh: "กุ้ง", nameEn: "Shrimp", icon: "🦐", sortOrder: 12 },
+  { slug: "shellfish-crab", nameTh: "หอย & ปู", nameEn: "Shellfish & Crab", icon: "🦀", sortOrder: 13 },
+  { slug: "beverages", nameTh: "เครื่องดื่ม", nameEn: "Beverages", icon: "🥤", sortOrder: 14 },
+  { slug: "noodles", nameTh: "ก๋วยเตี๋ยว & บะหมี่", nameEn: "Noodles", icon: "🍜", sortOrder: 15 },
+  { slug: "bakery", nameTh: "เบเกอรี่", nameEn: "Bakery", icon: "🍞", sortOrder: 16 },
+  { slug: "household", nameTh: "ของใช้ในบ้าน", nameEn: "Household", icon: "🧹", sortOrder: 17 },
+  { slug: "personal-care", nameTh: "ของใช้ส่วนตัว", nameEn: "Personal Care", icon: "🧴", sortOrder: 18 },
+  { slug: "baby", nameTh: "ของใช้เด็ก", nameEn: "Baby Care", icon: "🍼", sortOrder: 19 },
+  { slug: "pet", nameTh: "อาหาร & ของใช้สัตว์เลี้ยง", nameEn: "Pet Care", icon: "🐱", sortOrder: 20 },
+  { slug: "frozen", nameTh: "อาหารแช่แข็ง", nameEn: "Frozen Foods", icon: "🧊", sortOrder: 21 },
+  { slug: "snacks", nameTh: "ขนมขบเคี้ยว", nameEn: "Snacks", icon: "🍿", sortOrder: 22 },
+  { slug: "coffee-tea", nameTh: "กาแฟ & ชา", nameEn: "Coffee & Tea", icon: "☕", sortOrder: 23 },
+  { slug: "canned-goods", nameTh: "อาหารกระป๋อง & ของแห้ง", nameEn: "Canned Goods", icon: "🥫", sortOrder: 24 },
 ];
 
 interface ProductSeed {
@@ -100,13 +104,23 @@ interface ProductSeed {
 }
 
 const productSeeds: ProductSeed[] = [
-  // meat
-  { slug: "pork-belly", nameTh: "หมูสามชั้น", nameEn: "Pork Belly", categorySlug: "meat" },
-  { slug: "pork-shoulder", nameTh: "หมูสะโพก", nameEn: "Pork Shoulder", categorySlug: "meat" },
-  { slug: "pork-mince", nameTh: "หมูสับ", nameEn: "Minced Pork", categorySlug: "meat" },
-  { slug: "chicken-whole", nameTh: "ไก่สด", nameEn: "Whole Chicken", categorySlug: "meat" },
-  { slug: "chicken-grilled", nameTh: "ไก่ย่าง", nameEn: "Grilled Chicken", categorySlug: "meat" },
-  { slug: "beef", nameTh: "เนื้อวัว", nameEn: "Beef", categorySlug: "meat" },
+  // pork
+  { slug: "pork-belly", nameTh: "หมูสามชั้น", nameEn: "Pork Belly", categorySlug: "pork" },
+  { slug: "pork-shoulder", nameTh: "หมูสะโพก", nameEn: "Pork Shoulder", categorySlug: "pork" },
+  { slug: "pork-mince", nameTh: "หมูสับ", nameEn: "Minced Pork", categorySlug: "pork" },
+  { slug: "pork-ribs", nameTh: "ซี่โครงหมู", nameEn: "Pork Ribs", categorySlug: "pork" },
+  { slug: "pork-neck", nameTh: "หมูคอสไลซ์", nameEn: "Pork Neck Slices", categorySlug: "pork" },
+  { slug: "pork-ground", nameTh: "หมูบด", nameEn: "Ground Pork", categorySlug: "pork" },
+  // chicken
+  { slug: "chicken-whole", nameTh: "ไก่สด", nameEn: "Whole Chicken", categorySlug: "chicken" },
+  { slug: "chicken-ground", nameTh: "ไก่บด", nameEn: "Ground Chicken", categorySlug: "chicken" },
+  { slug: "chicken-grilled", nameTh: "ไก่ย่าง", nameEn: "Grilled Chicken", categorySlug: "chicken" },
+  { slug: "chicken-wings", nameTh: "ปีกไก่", nameEn: "Chicken Wings", categorySlug: "chicken" },
+  { slug: "chicken-breast", nameTh: "อกไก่", nameEn: "Chicken Breast", categorySlug: "chicken" },
+  { slug: "chicken-drumstick", nameTh: "น่องไก่", nameEn: "Chicken Drumstick", categorySlug: "chicken" },
+  // beef
+  { slug: "beef", nameTh: "เนื้อวัว", nameEn: "Beef", categorySlug: "beef" },
+  { slug: "beef-sliced", nameTh: "เนื้อวัวสไลซ์", nameEn: "Sliced Beef", categorySlug: "beef" },
   // vegetables
   { slug: "morning-glory", nameTh: "ผักบุ้ง", nameEn: "Morning Glory", categorySlug: "vegetables" },
   { slug: "chinese-kale", nameTh: "ผักคะน้า", nameEn: "Chinese Kale", categorySlug: "vegetables" },
@@ -143,15 +157,17 @@ const productSeeds: ProductSeed[] = [
   { slug: "mango", nameTh: "มะม่วง", nameEn: "Mango", categorySlug: "fruit" },
   { slug: "banana", nameTh: "กล้วยน้ำว้า", nameEn: "Banana", categorySlug: "fruit" },
   { slug: "watermelon", nameTh: "แตงโม", nameEn: "Watermelon", categorySlug: "fruit" },
-  // seafood
-  { slug: "mackerel", nameTh: "ปลาทู", nameEn: "Short Mackerel", categorySlug: "seafood" },
-  { slug: "black-tiger-shrimp", nameTh: "กุ้งกุลาดำ", nameEn: "Black Tiger Shrimp", categorySlug: "seafood" },
-  { slug: "white-shrimp", nameTh: "กุ้งขาว", nameEn: "White Shrimp", categorySlug: "seafood" },
-  { slug: "squid", nameTh: "ปลาหมึก", nameEn: "Squid", categorySlug: "seafood" },
-  { slug: "blue-crab", nameTh: "ปูม้า", nameEn: "Blue Crab", categorySlug: "seafood" },
-  { slug: "green-mussel", nameTh: "หอยแมลงภั่ง", nameEn: "Green Mussel", categorySlug: "seafood" },
-  { slug: "saba-fish", nameTh: "ปลาสำเตร็ง", nameEn: "Saba Fish", categorySlug: "seafood" },
-  { slug: "tilapia", nameTh: "ปลานิล", nameEn: "Tilapia", categorySlug: "seafood" },
+  // fish
+  { slug: "mackerel", nameTh: "ปลาทู", nameEn: "Short Mackerel", categorySlug: "fish" },
+  { slug: "tilapia", nameTh: "ปลานิล", nameEn: "Tilapia", categorySlug: "fish" },
+  { slug: "saba-fish", nameTh: "ปลาสำเตร็ง", nameEn: "Saba Fish", categorySlug: "fish" },
+  { slug: "squid", nameTh: "ปลาหมึก", nameEn: "Squid", categorySlug: "fish" },
+  // shrimp
+  { slug: "black-tiger-shrimp", nameTh: "กุ้งกุลาดำ", nameEn: "Black Tiger Shrimp", categorySlug: "shrimp" },
+  { slug: "white-shrimp", nameTh: "กุ้งขาว", nameEn: "White Shrimp", categorySlug: "shrimp" },
+  // shellfish-crab
+  { slug: "blue-crab", nameTh: "ปูม้า", nameEn: "Blue Crab", categorySlug: "shellfish-crab" },
+  { slug: "green-mussel", nameTh: "หอยแมลงภั่ง", nameEn: "Green Mussel", categorySlug: "shellfish-crab" },
   // beverages
   { slug: "drinking-water", nameTh: "น้ำดื่ม", nameEn: "Drinking Water", categorySlug: "beverages" },
   { slug: "soda", nameTh: "น้ำอัดลม", nameEn: "Soda", categorySlug: "beverages" },
@@ -261,9 +277,17 @@ const MOCK_PRODUCT_SLUGS = [
   "pork-belly",
   "pork-shoulder",
   "pork-mince",
+  "pork-ribs",
+  "pork-neck",
+  "pork-ground",
   "chicken-whole",
+  "chicken-ground",
   "chicken-grilled",
+  "chicken-wings",
+  "chicken-breast",
+  "chicken-drumstick",
   "beef",
+  "beef-sliced",
   // vegetables
   "morning-glory",
   "chinese-kale",
@@ -330,7 +354,7 @@ const simummuangMappings: MappingSeed[] = MOCK_PRODUCT_SLUGS.map((productSlug) =
  * bulk units (บาท/กล่อง 5 กก. etc.) — per-unit normalization is Phase 3.
  */
 const makroMappings: MappingSeed[] = [
-  // seafood (Makro's primary differentiator)
+  // seafood
   { sourceSlug: "makro", productSlug: "mackerel", sourceProductName: "ปลาทู" },
   { sourceSlug: "makro", productSlug: "black-tiger-shrimp", sourceProductName: "กุ้งกุลาดำ" },
   { sourceSlug: "makro", productSlug: "white-shrimp", sourceProductName: "กุ้งขาว" },
@@ -339,7 +363,7 @@ const makroMappings: MappingSeed[] = [
   { sourceSlug: "makro", productSlug: "green-mussel", sourceProductName: "หอยแมลงภั่ง" },
   { sourceSlug: "makro", productSlug: "saba-fish", sourceProductName: "ปลาสำเตร็ง" },
   { sourceSlug: "makro", productSlug: "tilapia", sourceProductName: "ปลานิล" },
-  // dry goods (Makro also covers these in bulk)
+  // dry goods
   { sourceSlug: "makro", productSlug: "jasmine-rice", sourceProductName: "ข้าวหอมมะลิ" },
   { sourceSlug: "makro", productSlug: "white-rice", sourceProductName: "ข้าวขาว" },
   { sourceSlug: "makro", productSlug: "sugar", sourceProductName: "น้ำตาลทราย" },
@@ -353,7 +377,13 @@ const makroMappings: MappingSeed[] = [
   // Meat
   { sourceSlug: "makro", productSlug: "pork-mince", sourceProductName: "หมูสับ" },
   { sourceSlug: "makro", productSlug: "pork-belly", sourceProductName: "หมูสามชั้น" },
+  { sourceSlug: "makro", productSlug: "pork-ribs", sourceProductName: "ซี่โครงหมู" },
+  { sourceSlug: "makro", productSlug: "pork-ground", sourceProductName: "หมูบด" },
   { sourceSlug: "makro", productSlug: "chicken-whole", sourceProductName: "ไก่สด" },
+  { sourceSlug: "makro", productSlug: "chicken-ground", sourceProductName: "ไก่บด" },
+  { sourceSlug: "makro", productSlug: "chicken-wings", sourceProductName: "ปีกไก่" },
+  { sourceSlug: "makro", productSlug: "chicken-breast", sourceProductName: "อกไก่" },
+  { sourceSlug: "makro", productSlug: "chicken-drumstick", sourceProductName: "น่องไก่" },
   { sourceSlug: "makro", productSlug: "beef", sourceProductName: "เนื้อวัว" },
   // Vegetables
   { sourceSlug: "makro", productSlug: "chinese-kale", sourceProductName: "ผักคะน้า" },
@@ -371,6 +401,16 @@ const makroMappings: MappingSeed[] = [
  */
 const lotussMappings: MappingSeed[] = [
   { sourceSlug: "lotuss", productSlug: "pork-belly", sourceProductName: "หมูสามชั้น" },
+  { sourceSlug: "lotuss", productSlug: "pork-shoulder", sourceProductName: "หมูสะโพก" },
+  { sourceSlug: "lotuss", productSlug: "pork-ribs", sourceProductName: "ซี่โครงหมู" },
+  { sourceSlug: "lotuss", productSlug: "pork-neck", sourceProductName: "หมูคอสไลซ์" },
+  { sourceSlug: "lotuss", productSlug: "pork-ground", sourceProductName: "หมูบด" },
+  { sourceSlug: "lotuss", productSlug: "chicken-ground", sourceProductName: "ไก่บด" },
+  { sourceSlug: "lotuss", productSlug: "chicken-wings", sourceProductName: "ปีกไก่" },
+  { sourceSlug: "lotuss", productSlug: "chicken-breast", sourceProductName: "อกไก่" },
+  { sourceSlug: "lotuss", productSlug: "chicken-drumstick", sourceProductName: "น่องไก่" },
+  { sourceSlug: "lotuss", productSlug: "beef-sliced", sourceProductName: "เนื้อวัวสไลซ์" },
+  { sourceSlug: "lotuss", productSlug: "mackerel", sourceProductName: "ปลาทู" },
   { sourceSlug: "lotuss", productSlug: "pork-mince", sourceProductName: "หมูสับ" },
   { sourceSlug: "lotuss", productSlug: "chicken-whole", sourceProductName: "ไก่สด" },
   { sourceSlug: "lotuss", productSlug: "beef", sourceProductName: "เนื้อวัว" },
@@ -380,7 +420,6 @@ const lotussMappings: MappingSeed[] = [
   { sourceSlug: "lotuss", productSlug: "tomato", sourceProductName: "มะเขือเทศ" },
   { sourceSlug: "lotuss", productSlug: "cucumber", sourceProductName: "แตงกวา" },
   { sourceSlug: "lotuss", productSlug: "long-bean", sourceProductName: "ถั่วฝักยาว" },
-  { sourceSlug: "lotuss", productSlug: "mackerel", sourceProductName: "ปลาทู" },
   { sourceSlug: "lotuss", productSlug: "jasmine-rice", sourceProductName: "ข้าวหอมมะลิ" },
   { sourceSlug: "lotuss", productSlug: "white-rice", sourceProductName: "ข้าวขาว" },
   { sourceSlug: "lotuss", productSlug: "chicken-egg", sourceProductName: "ไข่ไก่" },
@@ -412,11 +451,11 @@ async function main() {
   await db.insert(sources).values(sourceSeeds).onConflictDoNothing();
   console.log(`  Inserted ${sourceSeeds.length} sources (conflicts ignored)`);
 
-  // Update priceType/type for existing sources (onConflictDoNothing won't update)
+  // Update priceType/type/names for existing sources (onConflictDoNothing won't update)
   for (const s of sourceSeeds) {
     await db
       .update(sources)
-      .set({ priceType: s.priceType, type: s.type })
+      .set({ priceType: s.priceType, type: s.type, nameTh: s.nameTh, nameEn: s.nameEn })
       .where(eq(sources.slug, s.slug));
   }
   console.log(`  Updated priceType/type on ${sourceSeeds.length} sources`);
@@ -451,6 +490,18 @@ async function main() {
   });
   await db.insert(products).values(productValues).onConflictDoNothing();
   console.log(`  Inserted ${productValues.length} products (conflicts ignored)`);
+
+  // Reassign products to new categories (onConflictDoNothing doesn't update categoryId)
+  for (const p of productSeeds) {
+    const categoryId = categoryIdBySlug.get(p.categorySlug);
+    if (categoryId) {
+      await db
+        .update(products)
+        .set({ categoryId, nameTh: p.nameTh, nameEn: p.nameEn })
+        .where(eq(products.slug, p.slug));
+    }
+  }
+  console.log(`  Updated category assignments for ${productSeeds.length} products`);
 
   console.log("Seeding product-source mappings...");
   const sourceRows = await db.select({ id: sources.id, slug: sources.slug }).from(sources);

@@ -118,7 +118,13 @@ const PRODUCT_CATEGORY_MAP: Record<string, string[]> = {
   // `fresh-food/meat-poultry` returns 200 but found=0; use these instead)
   "หมูสับ": ["meat/pork"],
   "หมูสามชั้น": ["meat/pork"],
+  "ซี่โครงหมู": ["meat/pork"],
+  "หมูบด": ["meat/pork"],
   "ไก่สด": ["meat/poultry"],
+  "ไก่บด": ["meat/poultry"],
+  "อกไก่": ["meat/poultry"],
+  "ปีกไก่": ["meat/poultry"],
+  "น่องไก่": ["meat/poultry"],
   "เนื้อวัว": ["meat/beef"],
   // Vegetables
   "ผักคะน้า": ["fruit-vegetables/vegetables/fresh-vegetables"],

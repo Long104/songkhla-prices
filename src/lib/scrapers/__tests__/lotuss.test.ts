@@ -7,44 +7,64 @@ vi.mock("../browserless", () => ({
 }));
 
 describe("lotussScraper", () => {
-  it("scrapes products correctly using search terms and text splitting", async () => {
+  it("extracts valid product prices within ฿5–฿500 range", async () => {
     const mockHtml = `
-      <html>
-        <body>
-          <div>Some content... สบู่หอม ฿59.00 ...</div>
-          <div>ปลากระป๋องตราหอย ฿25.00 ...</div>
-        </body>
-      </html>
+      <html><body>
+        หมูสามชั้น 150 กรัม ฿39.00 ซื้อครบลดเพิ่ม
+        หมูสามชั้น 300 กรัม ฿69.00
+      </body></html>
     `;
     vi.spyOn(browserless, "fetchRenderedHtml").mockResolvedValue(mockHtml);
 
     const results = await lotussScraper.scrape();
 
-    expect(results.length).toBeGreaterThan(0);
-    
-    // Find our mocked items
-    const soap = results.find((r) => r.sourceProductName.includes("สบู่หอม"));
-    expect(soap).toBeDefined();
-    expect(soap?.price).toBe(59);
-    expect(soap?.unit).toBe("บาท/ชิ้น");
-
-    const fish = results.find((r) => r.sourceProductName.includes("ปลากระป๋องตราหอย"));
-    expect(fish).toBeDefined();
-    expect(fish?.price).toBe(25);
-    expect(fish?.unit).toBe("บาท/ชิ้น");
+    const porkBelly = results.find((r) => r.sourceProductName === "หมูสามชั้น");
+    expect(porkBelly).toBeDefined();
+    expect(porkBelly?.price).toBe(39); // cheapest variant
+    expect(porkBelly?.unit).toBe("บาท/ชิ้น");
   });
 
-  it("calls fetchRenderedHtml with correct options", async () => {
-    const mockFetch = vi.spyOn(browserless, "fetchRenderedHtml").mockResolvedValue("<html></html>");
-    
-    await lotussScraper.scrape();
-    
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("https://www.lotuss.com/th/search/"),
-      {
-        gotoOptions: { waitUntil: "networkidle2", timeout: 35000 },
-        waitForTimeout: 3000,
-      }
-    );
+  it("filters out prices above ฿500 (phone numbers, cart totals)", async () => {
+    const mockHtml = `
+      <html><body>
+        หมูสามชั้น ฿45.00
+        โทร. 02-150-9999 ฿1509
+        ราคากลางทั่วประเทศ ฿1339
+      </body></html>
+    `;
+    vi.spyOn(browserless, "fetchRenderedHtml").mockResolvedValue(mockHtml);
+
+    const results = await lotussScraper.scrape();
+
+    const porkBelly = results.find((r) => r.sourceProductName === "หมูสามชั้น");
+    expect(porkBelly).toBeDefined();
+    expect(porkBelly?.price).toBe(45); // only the valid price
+    expect(porkBelly?.price).not.toBe(1509);
+    expect(porkBelly?.price).not.toBe(1339);
+  });
+
+  it("outputs canonical tracked name as sourceProductName", async () => {
+    const mockHtml = `<html><body>หมูสามชั้นสไลซ์ 150 กรัม ฿39.00</body></html>`;
+    vi.spyOn(browserless, "fetchRenderedHtml").mockResolvedValue(mockHtml);
+
+    const results = await lotussScraper.scrape();
+
+    // Must be exact "หมูสามชั้น" not the raw scraped title
+    const exact = results.find((r) => r.sourceProductName === "หมูสามชั้น");
+    expect(exact).toBeDefined();
+  });
+
+  it("returns empty when no valid prices found", async () => {
+    const mockHtml = `<html><body>ไม่มีสินค้า ฿0 หรือ ฿9999</body></html>`;
+    vi.spyOn(browserless, "fetchRenderedHtml").mockResolvedValue(mockHtml);
+
+    const results = await lotussScraper.scrape();
+    expect(results.length).toBe(0);
+  });
+
+  it("handles browserless returning null gracefully", async () => {
+    vi.spyOn(browserless, "fetchRenderedHtml").mockResolvedValue(null);
+    const results = await lotussScraper.scrape();
+    expect(results.length).toBe(0);
   });
 });

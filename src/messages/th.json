@@ -30,7 +30,9 @@
     "updatedOn": "อัพเดทเมื่อ {date}"
   },
   "categories": {
-    "meat": "เนื้อสัตว์",
+    "pork": "หมู",
+    "chicken": "ไก่",
+    "beef": "เนื้อวัว",
     "vegetables": "ผัก",
     "rice": "ข้าว",
     "eggs": "ไข่ & นม",
@@ -38,7 +40,9 @@
     "seasoning": "เครื่องปรุง",
     "fuel": "น้ำมันเชื้อเพลิง",
     "fruit": "ผลไม้",
-    "seafood": "อาหารทะเล",
+    "fish": "ปลา",
+    "shrimp": "กุ้ง",
+    "shellfish-crab": "หอย & ปู",
     "beverages": "เครื่องดื่ม",
     "noodles": "ก๋วยเตี๋ยว & บะหมี่",
     "bakery": "เบเกอรี่",

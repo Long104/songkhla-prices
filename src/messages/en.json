@@ -30,7 +30,9 @@
     "updatedOn": "Updated on {date}"
   },
   "categories": {
-    "meat": "Meat",
+    "pork": "Pork",
+    "chicken": "Chicken",
+    "beef": "Beef",
     "vegetables": "Vegetables",
     "rice": "Rice",
     "eggs": "Eggs & Dairy",
@@ -38,7 +40,9 @@
     "seasoning": "Seasoning",
     "fuel": "Fuel",
     "fruit": "Fruit",
-    "seafood": "Seafood",
+    "fish": "Fish",
+    "shrimp": "Shrimp",
+    "shellfish-crab": "Shellfish & Crab",
     "beverages": "Beverages",
     "noodles": "Noodles",
     "bakery": "Bakery",

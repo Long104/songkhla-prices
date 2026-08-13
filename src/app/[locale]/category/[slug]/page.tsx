@@ -12,7 +12,12 @@ import { eq } from "drizzle-orm";
 import { DEFAULT_PROVINCE_CODE } from "@/lib/provinces";
 import { getProvinceIdByCode, getProductsWithCheapestPrice, type ProductWithCheapestPrice } from "@/db/queries";
 
-const VALID_SLUGS = ["meat", "vegetables", "rice", "eggs", "oil", "seasoning", "fuel", "fruit", "seafood", "beverages", "noodles", "bakery"];
+const VALID_SLUGS = [
+  "pork", "chicken", "beef",
+  "vegetables", "rice", "eggs", "oil", "seasoning", "fuel", "fruit",
+  "fish", "shrimp", "shellfish-crab",
+  "beverages", "noodles", "bakery",
+];
 
 export function generateStaticParams() {
   return VALID_SLUGS.map((slug) => ({ slug }));

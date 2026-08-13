@@ -14,7 +14,9 @@ import { getCategoryProductCounts, getProvinceIdByCode, getRecentPriceChanges, t
 import { DEFAULT_PROVINCE_CODE } from "@/lib/provinces";
 
 const CATEGORIES = [
-  { slug: "meat", icon: "🥩" },
+  { slug: "pork", icon: "🥓" },
+  { slug: "chicken", icon: "🍗" },
+  { slug: "beef", icon: "🥩" },
   { slug: "vegetables", icon: "🥬" },
   { slug: "rice", icon: "🍚" },
   { slug: "eggs", icon: "🥚" },
@@ -22,7 +24,9 @@ const CATEGORIES = [
   { slug: "seasoning", icon: "🧂" },
   { slug: "fuel", icon: "⛽" },
   { slug: "fruit", icon: "🍎" },
-  { slug: "seafood", icon: "🐟" },
+  { slug: "fish", icon: "🐟" },
+  { slug: "shrimp", icon: "🦐" },
+  { slug: "shellfish-crab", icon: "🦀" },
   { slug: "beverages", icon: "🥤" },
   { slug: "noodles", icon: "🍜" },
   { slug: "bakery", icon: "🍞" },
