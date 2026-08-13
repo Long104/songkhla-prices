@@ -11,7 +11,7 @@ import { getDb } from "@/db";
 import { products, categories } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { DEFAULT_PROVINCE_CODE } from "@/lib/provinces";
-import { getProvinceIdByCode, provincePriceFilter } from "@/db/queries";
+import { getProvinceIdByCode } from "@/db/queries";
 import { formatDate } from "@/lib/utils";
 
 export default async function ProductPage({
@@ -24,7 +24,6 @@ export default async function ProductPage({
 
   const cookieStore = await cookies();
   const provinceCode = cookieStore.get("province")?.value ?? DEFAULT_PROVINCE_CODE;
-  const priceType = cookieStore.get("priceType")?.value ?? "retail";
 
   let product: { nameTh: string; nameEn: string | null; categoryNameTh: string; categorySlug: string; categoryIcon: string | null } | null = null;
   let priceRows: PriceRow[] = [];
@@ -50,7 +49,7 @@ export default async function ProductPage({
       if (rows.length > 0) {
         const productRow = rows[0];
         product = productRow;
-        const rawPrices = (await db.execute(sql`
+        const result = await db.execute(sql`
           SELECT DISTINCT ON (prices.source_id)
             sources.slug as "sourceSlug",
             sources.name_th as "sourceNameTh",
@@ -63,10 +62,11 @@ export default async function ProductPage({
           FROM prices
           INNER JOIN sources ON prices.source_id = sources.id
           WHERE prices.product_id = ${productRow.id}
-            AND ${provincePriceFilter(provinceId) ?? sql`TRUE`}
-            AND sources.price_type = ${priceType}
+            AND (${provinceId !== null ? sql`prices.province_id = ${provinceId} OR prices.province_id IS NULL` : sql`prices.province_id IS NULL`})
           ORDER BY prices.source_id, prices.source_date DESC, prices.scraped_at DESC
-        `)) as unknown as Array<{
+        `);
+
+        const rawPrices = (Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? []) as Array<{
           sourceSlug: string;
           sourceNameTh: string;
           sourceNameEn: string | null;

@@ -17,6 +17,9 @@ const VALID_SLUGS = [
   "vegetables", "rice", "eggs", "oil", "seasoning", "fuel", "fruit",
   "fish", "shrimp", "shellfish-crab",
   "beverages", "noodles", "bakery",
+  "household", "personal-care", "baby", "pet",
+  "frozen", "snacks", "coffee-tea", "canned-goods",
+  "meat", "seafood",
 ];
 
 export function generateStaticParams() {
@@ -34,7 +37,6 @@ export default async function CategoryPage({
 
   const cookieStore = await cookies();
   const provinceCode = cookieStore.get("province")?.value ?? DEFAULT_PROVINCE_CODE;
-  const priceType = cookieStore.get("priceType")?.value ?? "retail";
 
   let categoryIcon: string | null = null;
   let productList: ProductWithCheapestPrice[] = [];
@@ -55,7 +57,7 @@ export default async function CategoryPage({
         .from(products)
         .innerJoin(categories, eq(products.categoryId, categories.id))
         .where(eq(categories.slug, slug));
-      productList = await getProductsWithCheapestPrice(db, result, provinceId, priceType);
+      productList = await getProductsWithCheapestPrice(db, result, provinceId);
     }
   } catch {
     // DB not available

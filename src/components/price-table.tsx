@@ -66,7 +66,7 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
               <div className="flex items-center justify-between gap-3 md:justify-start">
                 <div className="flex min-w-0 items-center gap-2">
                   <p className="truncate text-sm font-semibold text-zinc-800">
-                    {name}
+                    {name.replace("ราคากลางทั่วประเทศ", "")}
                     {isCheapest && (
                       <Badge className="ml-2 bg-green-600 text-[11px]">
                         {tc("cheapest")}

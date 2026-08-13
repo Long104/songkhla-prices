@@ -4,7 +4,7 @@ import { ShoppingBasket } from "lucide-react";
 export function Footer() {
   const t = useTranslations("footer");
   const tc = useTranslations("common");
-  const sources = ["DIT", "OAE", "Talad Thai", "Si Mum Muang", "EPPO"];
+  const sources = ["กรมการค้าภายใน", "แม็คโคร", "โลตัส", "ตลาดสี่มุมเมือง", "พลังงาน"];
 
   return (
     <footer className="mt-auto border-t border-zinc-100 bg-green-50/40 py-8">

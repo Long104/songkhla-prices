@@ -30,6 +30,14 @@ const CATEGORIES = [
   { slug: "beverages", icon: "🥤" },
   { slug: "noodles", icon: "🍜" },
   { slug: "bakery", icon: "🍞" },
+  { slug: "household", icon: "🧹" },
+  { slug: "personal-care", icon: "🧴" },
+  { slug: "baby", icon: "🍼" },
+  { slug: "pet", icon: "🐱" },
+  { slug: "frozen", icon: "🧊" },
+  { slug: "snacks", icon: "🍿" },
+  { slug: "coffee-tea", icon: "☕" },
+  { slug: "canned-goods", icon: "🥫" },
 ];
 
 export default async function HomePage({
@@ -42,7 +50,6 @@ export default async function HomePage({
 
   const cookieStore = await cookies();
   const provinceCode = cookieStore.get("province")?.value ?? DEFAULT_PROVINCE_CODE;
-  const priceType = cookieStore.get("priceType")?.value ?? "retail";
 
   let counts = new Map<string, number>();
   let changes: PriceChangeItem[] = [];
@@ -53,7 +60,7 @@ export default async function HomePage({
       const provinceId = await getProvinceIdByCode(db, provinceCode);
       const [countRows, changeRows] = await Promise.all([
         getCategoryProductCounts(db),
-        getRecentPriceChanges(db, provinceId, 8, priceType),
+        getRecentPriceChanges(db, provinceId, 8),
       ]);
       counts = new Map(countRows.map((c) => [c.slug, c.count]));
       changes = changeRows;
@@ -100,7 +107,6 @@ function HomeContent({
             <MapPin className="h-4 w-4 text-green-600" />
             <span className="text-sm font-medium text-zinc-600">{tc("province")}:</span>
             <ProvinceSelector />
-            <PriceTypeToggle />
           </div>
         </div>
       </section>
