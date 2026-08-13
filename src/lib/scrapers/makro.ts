@@ -114,18 +114,21 @@ const PRODUCT_CATEGORY_MAP: Record<string, string[]> = {
   "บะหมี่กึ่งสำเร็จรูป": ["dry-grocery/seasoning-and-spices"],
   "แป้งสาลี": ["dry-grocery/flour"],
   "ไข่ไก่": ["dry-grocery/eggs"],
-  // Meat — specific subcategories for better matching (verified Aug 2026:
-  // `fresh-food/meat-poultry` returns 200 but found=0; use these instead)
+  // Meat
   "หมูสับ": ["meat/pork"],
   "หมูสามชั้น": ["meat/pork"],
+  "หมูสะโพก": ["meat/pork"],
   "ซี่โครงหมู": ["meat/pork"],
+  "หมูคอสไลซ์": ["meat/pork"],
   "หมูบด": ["meat/pork"],
   "ไก่สด": ["meat/poultry"],
   "ไก่บด": ["meat/poultry"],
-  "อกไก่": ["meat/poultry"],
+  "ไก่ย่าง": ["meat/poultry"],
   "ปีกไก่": ["meat/poultry"],
+  "อกไก่": ["meat/poultry"],
   "น่องไก่": ["meat/poultry"],
   "เนื้อวัว": ["meat/beef"],
+  "เนื้อวัวสไลซ์": ["meat/beef"],
   // Vegetables
   "ผักคะน้า": ["fruit-vegetables/vegetables/fresh-vegetables"],
   "ผักบุ้ง": ["fruit-vegetables/vegetables/fresh-vegetables"],
@@ -133,12 +136,27 @@ const PRODUCT_CATEGORY_MAP: Record<string, string[]> = {
   "มะเขือเทศ": ["fruit-vegetables/vegetables/fresh-vegetables"],
   "แตงกวา": ["fruit-vegetables/vegetables/fresh-vegetables"],
   "ถั่วฝักยาว": ["fruit-vegetables/vegetables/fresh-vegetables"],
-  // Household/Personal Care/Pet
+  "ผักกวางตุ้งฮุง": ["fruit-vegetables/vegetables/fresh-vegetables"],
+  // Fruit
+  "ส้ม": ["fruit-vegetables/fruits"],
+  "มะม่วง": ["fruit-vegetables/fruits"],
+  "กล้วยน้ำว้า": ["fruit-vegetables/fruits"],
+  "แตงโม": ["fruit-vegetables/fruits"],
+  // Household
   "ผงซักฟอก": ["household/laundry"],
   "น้ำยาล้างจาน": ["household/dishwashing"],
+  "น้ำยาถูพื้น": ["household/floor-cleaning"],
+  "น้ำยาล้างห้องน้ำ": ["household/toilet-cleaning"],
+  "ทิชชู่": ["household/tissue"],
+  // Personal Care
+  "สบู่ก้อน": ["personal-care/body-wash"],
   "แชมพู": ["personal-care/hair-care/shampoo"],
   "ยาสีฟัน": ["personal-care/oral-care/toothpaste"],
+  "ครีมอาบน้ำ": ["personal-care/body-wash"],
+  "ผ้าอนามัย": ["personal-care/sanitary"],
+  // Pet Care
   "อาหารแมว": ["pet-care/cat-food"],
+  "อาหารสุนัข": ["pet-care/dog-food"],
 };
 
 /**

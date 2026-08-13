@@ -73,7 +73,9 @@
     "price": "ราคา",
     "unit": "หน่วย",
     "date": "อัพเดท",
-    "categoryLabel": "หมวดหมู่"
+    "categoryLabel": "หมวดหมู่",
+    "from": "เทียบจาก",
+    "source_date": "อัพเดท"
   },
   "search": {
     "title": "ค้นหาสินค้า",

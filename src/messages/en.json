@@ -73,7 +73,9 @@
     "price": "Price",
     "unit": "Unit",
     "date": "Updated",
-    "categoryLabel": "Category"
+    "categoryLabel": "Category",
+    "from": "from",
+    "source_date": "Updated"
   },
   "search": {
     "title": "Search products",

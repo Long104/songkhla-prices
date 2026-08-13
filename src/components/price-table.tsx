@@ -3,8 +3,10 @@ import { UnitWarningBadge } from "./unit-warning-badge";
 import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { normalizePriceAndUnit } from "@/lib/unit-normalizer";
 
 export interface PriceRow {
+  productName: string; // Added to pass to normalizePriceAndUnit
   sourceSlug: string;
   sourceNameTh: string;
   sourceNameEn: string;
@@ -20,51 +22,48 @@ interface PriceTableProps {
   locale: string;
 }
 
-/**
- * Price comparison list — the core of the product page.
- *
- * Rows are sorted cheapest-first; the cheapest source is highlighted with a
- * green background and a "ถูกที่สุด" badge. Rendered as stacked cards (not a
- * table) so it never overflows on small phones.
- */
 export function PriceTable({ rows, locale }: PriceTableProps) {
   const t = useTranslations("product");
   const tc = useTranslations("common");
 
   if (rows.length === 0) return null;
 
-  const sorted = [...rows].sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-  const cheapestPrice = parseFloat(sorted[0].price);
-  const units = new Set(rows.map((r) => r.unit));
+  const normalizedRows = rows.map((r) => ({
+    ...r,
+    ...normalizePriceAndUnit(parseFloat(r.price), r.unit, r.productName),
+  }));
+
+  const sorted = [...normalizedRows].sort((a, b) => a.normalizedPrice - b.normalizedPrice);
+  const cheapestPrice = sorted[0].normalizedPrice;
+  const units = new Set(normalizedRows.map((r) => r.normalizedUnit));
   const hasMismatch = units.size > 1;
 
   return (
     <div className="space-y-3">
       {hasMismatch && <UnitWarningBadge />}
 
-      {/* Column labels — desktop only */}
-      <div className="hidden grid-cols-[1fr_auto_auto_auto] gap-3 px-4 text-xs font-medium text-zinc-400 sm:grid">
-        <span>{t("source")}</span>
-        <span className="w-24 text-right">{t("price")}</span>
-        <span className="w-16">{t("unit")}</span>
-        <span className="w-24 text-right">{t("date")}</span>
-      </div>
-
-      <ul className="space-y-2">
+        <div className="hidden grid-cols-[1fr,auto,auto] items-center gap-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-xs font-semibold text-zinc-500 md:grid">
+          <span>{t("source")}</span>
+          <span className="text-right">{t("price")}</span>
+          <span className="text-right">{t("date")}</span>
+        </div>
+        <ul className="space-y-2">
         {sorted.map((row, i) => {
-          const isCheapest = parseFloat(row.price) === cheapestPrice;
+          const isCheapest = row.normalizedPrice === cheapestPrice;
           const name = locale === "th" ? row.sourceNameTh : row.sourceNameEn;
+          const showSecondary = row.normalizedUnit === "บาท/กก." && row.originalUnit !== "บาท/กก.";
+
           return (
             <li
               key={`${row.sourceSlug}-${i}`}
               className={cn(
-                "rounded-xl border bg-white px-4 py-3",
+                "rounded-xl border bg-white px-4 py-3 md:grid md:grid-cols-[1fr,auto,auto] md:items-center md:gap-4 md:py-2",
                 isCheapest
                   ? "border-green-200 bg-green-50/80 ring-1 ring-green-200"
                   : "border-zinc-200"
               )}
             >
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-3 md:justify-start">
                 <div className="flex min-w-0 items-center gap-2">
                   <p className="truncate text-sm font-semibold text-zinc-800">
                     {name}
@@ -80,20 +79,26 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
                     )}
                   </p>
                 </div>
+              </div>
+              <div className="mt-2 text-right md:mt-0">
                 <p
                   className={cn(
                     "shrink-0 text-base font-bold",
                     isCheapest ? "text-green-700" : "text-zinc-800"
                   )}
                 >
-                  ฿{Number(row.price).toFixed(2)}
+                  ฿{row.normalizedPrice.toFixed(2)}/{row.normalizedUnit.split("/")[1] || "unit"}
                 </p>
+                {showSecondary && (
+                  <p className="text-[10px] text-zinc-400">
+                    ({t("from")} ฿{row.originalPrice.toFixed(2)} / {row.weightText})
+                  </p>
+                )}
               </div>
-              <div className="mt-1.5 flex items-center justify-between text-xs text-zinc-400">
+              <div className="mt-2 flex items-center justify-end text-xs text-zinc-400 md:mt-0 md:justify-end">
                 <span>
-                  {t("unit")}: {row.unit}
+                  {t("source_date")}: {formatDate(row.sourceDate, locale)}
                 </span>
-                <span>{formatDate(row.sourceDate, locale)}</span>
               </div>
             </li>
           );

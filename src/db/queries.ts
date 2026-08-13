@@ -1,6 +1,7 @@
 import { and, eq, isNull, max, or, sql, type SQL } from "drizzle-orm";
 import { categories, prices, products, provinces, sources } from "@/db/schema";
 import type { Db } from "@/db";
+import { normalizePriceAndUnit } from "@/lib/unit-normalizer";
 
 /**
  * Resolve a DOPA province code (e.g. "90" = Songkhla) to its DB id.
@@ -65,17 +66,27 @@ export async function getProductsWithCheapestPrice(
   return Promise.all(
     productRows.map(async (p) => {
       try {
-        const priceRows = await db
-          .select({
-            price: prices.price,
-            unit: prices.unit,
-            sourceId: prices.sourceId,
-            sourceNameTh: sources.nameTh,
-            sourceNameEn: sources.nameEn,
-          })
-          .from(prices)
-          .innerJoin(sources, eq(prices.sourceId, sources.id))
-          .where(and(eq(prices.productId, p.id), provincePriceFilter(provinceId), priceTypeFilter(priceType)));
+        const result = await db.execute(sql`
+          SELECT DISTINCT ON (prices.source_id)
+            prices.price,
+            prices.unit,
+            prices.source_id as "sourceId",
+            sources.name_th as "sourceNameTh",
+            sources.name_en as "sourceNameEn"
+          FROM prices
+          INNER JOIN sources ON prices.source_id = sources.id
+          WHERE prices.product_id = ${p.id}
+            AND ${provincePriceFilter(provinceId) ?? sql`TRUE`}
+            AND ${priceTypeFilter(priceType)}
+          ORDER BY prices.source_id, prices.source_date DESC, prices.scraped_at DESC
+        `);
+        const priceRows = result.rows as unknown as Array<{
+          price: string;
+          unit: string;
+          sourceId: number;
+          sourceNameTh: string;
+          sourceNameEn: string | null;
+        }>;
 
         let cheapestPrice: number | null = null;
         let cheapestUnit: string | null = null;
@@ -83,21 +94,22 @@ export async function getProductsWithCheapestPrice(
         let cheapestSourceNameEn: string | null = null;
         let maxPrice: number | null = null;
         let maxUnit: string | null = null;
-        const sourceIds = new Set<number>();
+
         for (const r of priceRows) {
-          sourceIds.add(r.sourceId);
-          const num = Number(r.price);
-          if (cheapestPrice === null || num < cheapestPrice) {
-            cheapestPrice = num;
-            cheapestUnit = r.unit;
+          const normalized = normalizePriceAndUnit(Number(r.price), r.unit, p.nameTh);
+          
+          if (cheapestPrice === null || normalized.normalizedPrice < cheapestPrice) {
+            cheapestPrice = normalized.normalizedPrice;
+            cheapestUnit = normalized.normalizedUnit;
             cheapestSourceNameTh = r.sourceNameTh;
             cheapestSourceNameEn = r.sourceNameEn;
           }
-          if (maxPrice === null || num > maxPrice) {
-            maxPrice = num;
-            maxUnit = r.unit;
+          if (maxPrice === null || normalized.normalizedPrice > maxPrice) {
+            maxPrice = normalized.normalizedPrice;
+            maxUnit = normalized.normalizedUnit;
           }
         }
+
         return {
           ...p,
           cheapestPrice,
@@ -106,7 +118,7 @@ export async function getProductsWithCheapestPrice(
           maxUnit,
           cheapestSourceNameTh,
           cheapestSourceNameEn,
-          sourceCount: sourceIds.size,
+          sourceCount: priceRows.length,
         };
       } catch {
         return {

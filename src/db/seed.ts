@@ -377,14 +377,18 @@ const makroMappings: MappingSeed[] = [
   // Meat
   { sourceSlug: "makro", productSlug: "pork-mince", sourceProductName: "หมูสับ" },
   { sourceSlug: "makro", productSlug: "pork-belly", sourceProductName: "หมูสามชั้น" },
+  { sourceSlug: "makro", productSlug: "pork-shoulder", sourceProductName: "หมูสะโพก" },
   { sourceSlug: "makro", productSlug: "pork-ribs", sourceProductName: "ซี่โครงหมู" },
+  { sourceSlug: "makro", productSlug: "pork-neck", sourceProductName: "หมูคอสไลซ์" },
   { sourceSlug: "makro", productSlug: "pork-ground", sourceProductName: "หมูบด" },
   { sourceSlug: "makro", productSlug: "chicken-whole", sourceProductName: "ไก่สด" },
   { sourceSlug: "makro", productSlug: "chicken-ground", sourceProductName: "ไก่บด" },
+  { sourceSlug: "makro", productSlug: "chicken-grilled", sourceProductName: "ไก่ย่าง" },
   { sourceSlug: "makro", productSlug: "chicken-wings", sourceProductName: "ปีกไก่" },
   { sourceSlug: "makro", productSlug: "chicken-breast", sourceProductName: "อกไก่" },
   { sourceSlug: "makro", productSlug: "chicken-drumstick", sourceProductName: "น่องไก่" },
   { sourceSlug: "makro", productSlug: "beef", sourceProductName: "เนื้อวัว" },
+  { sourceSlug: "makro", productSlug: "beef-sliced", sourceProductName: "เนื้อวัวสไลซ์" },
   // Vegetables
   { sourceSlug: "makro", productSlug: "chinese-kale", sourceProductName: "ผักคะน้า" },
   { sourceSlug: "makro", productSlug: "morning-glory", sourceProductName: "ผักบุ้ง" },
@@ -392,6 +396,27 @@ const makroMappings: MappingSeed[] = [
   { sourceSlug: "makro", productSlug: "tomato", sourceProductName: "มะเขือเทศ" },
   { sourceSlug: "makro", productSlug: "cucumber", sourceProductName: "แตงกวา" },
   { sourceSlug: "makro", productSlug: "long-bean", sourceProductName: "ถั่วฝักยาว" },
+  { sourceSlug: "makro", productSlug: "chinese-cabbage", sourceProductName: "ผักกวางตุ้งฮุง" },
+  // Fruit
+  { sourceSlug: "makro", productSlug: "orange", sourceProductName: "ส้ม" },
+  { sourceSlug: "makro", productSlug: "mango", sourceProductName: "มะม่วง" },
+  { sourceSlug: "makro", productSlug: "banana", sourceProductName: "กล้วยน้ำว้า" },
+  { sourceSlug: "makro", productSlug: "watermelon", sourceProductName: "แตงโม" },
+  // Household
+  { sourceSlug: "makro", productSlug: "detergent", sourceProductName: "ผงซักฟอก" },
+  { sourceSlug: "makro", productSlug: "dish-soap", sourceProductName: "น้ำยาล้างจาน" },
+  { sourceSlug: "makro", productSlug: "floor-cleaner", sourceProductName: "น้ำยาถูพื้น" },
+  { sourceSlug: "makro", productSlug: "toilet-cleaner", sourceProductName: "น้ำยาล้างห้องน้ำ" },
+  { sourceSlug: "makro", productSlug: "toilet-paper", sourceProductName: "ทิชชู่" },
+  // Personal Care
+  { sourceSlug: "makro", productSlug: "bar-soap", sourceProductName: "สบู่ก้อน" },
+  { sourceSlug: "makro", productSlug: "shampoo", sourceProductName: "แชมพู" },
+  { sourceSlug: "makro", productSlug: "toothpaste", sourceProductName: "ยาสีฟัน" },
+  { sourceSlug: "makro", productSlug: "body-wash", sourceProductName: "ครีมอาบน้ำ" },
+  { sourceSlug: "makro", productSlug: "sanitary-pads", sourceProductName: "ผ้าอนามัย" },
+  // Pet Care
+  { sourceSlug: "makro", productSlug: "cat-food", sourceProductName: "อาหารแมว" },
+  { sourceSlug: "makro", productSlug: "dog-food", sourceProductName: "อาหารสุนัข" },
 ];
 
 /**

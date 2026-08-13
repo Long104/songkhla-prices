@@ -8,8 +8,8 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { PriceTable, type PriceRow } from "@/components/price-table";
 import { EmptyState } from "@/components/empty-state";
 import { getDb } from "@/db";
-import { products, categories, prices, sources } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { products, categories } from "@/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { DEFAULT_PROVINCE_CODE } from "@/lib/provinces";
 import { getProvinceIdByCode, provincePriceFilter } from "@/db/queries";
 import { formatDate } from "@/lib/utils";
@@ -50,25 +50,38 @@ export default async function ProductPage({
       if (rows.length > 0) {
         const productRow = rows[0];
         product = productRow;
-        const rawPrices = await db
-          .select({
-            sourceSlug: sources.slug,
-            sourceNameTh: sources.nameTh,
-            sourceNameEn: sources.nameEn,
-            sourceType: sources.type,
-            price: prices.price,
-            unit: prices.unit,
-            sourceDate: prices.sourceDate,
-            provinceId: prices.provinceId,
-          })
-          .from(prices)
-          .innerJoin(sources, eq(prices.sourceId, sources.id))
-          .where(and(eq(prices.productId, productRow.id), provincePriceFilter(provinceId), eq(sources.priceType, priceType)));
+        const rawPrices = (await db.execute(sql`
+          SELECT DISTINCT ON (prices.source_id)
+            sources.slug as "sourceSlug",
+            sources.name_th as "sourceNameTh",
+            sources.name_en as "sourceNameEn",
+            sources.type as "sourceType",
+            prices.price,
+            prices.unit,
+            prices.source_date as "sourceDate",
+            prices.province_id as "provinceId"
+          FROM prices
+          INNER JOIN sources ON prices.source_id = sources.id
+          WHERE prices.product_id = ${productRow.id}
+            AND ${provincePriceFilter(provinceId) ?? sql`TRUE`}
+            AND sources.price_type = ${priceType}
+          ORDER BY prices.source_id, prices.source_date DESC, prices.scraped_at DESC
+        `)) as unknown as Array<{
+          sourceSlug: string;
+          sourceNameTh: string;
+          sourceNameEn: string | null;
+          sourceType: string;
+          price: string;
+          unit: string;
+          sourceDate: string;
+          provinceId: number | null;
+        }>;
 
         priceRows = rawPrices.map((r) => ({
+          productName: productRow.nameTh,
           sourceSlug: r.sourceSlug,
           sourceNameTh: r.sourceNameTh,
-          sourceNameEn: r.sourceNameEn,
+          sourceNameEn: r.sourceNameEn ?? "",
           sourceType: r.sourceType,
           price: r.price,
           unit: r.unit,
