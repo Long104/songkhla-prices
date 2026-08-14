@@ -128,10 +128,8 @@ function CategoryContent({
               slug={p.slug}
               nameTh={p.nameTh}
               nameEn={p.nameEn}
-              cheapestPrice={p.cheapestPrice}
-              cheapestUnit={p.cheapestUnit}
-              maxPrice={p.maxPrice}
-              maxUnit={p.maxUnit}
+              primarySummary={p.primarySummary}
+              secondarySummary={p.secondarySummary}
               cheapestSourceNameTh={p.cheapestSourceNameTh}
               cheapestSourceNameEn={p.cheapestSourceNameEn}
               sourceCount={p.sourceCount}

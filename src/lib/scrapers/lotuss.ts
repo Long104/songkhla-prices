@@ -89,7 +89,7 @@ interface LotusMinimumPrice {
   finalPrice: LotusPriceValue;
 }
 
-interface LotusApiProduct {
+export interface LotusApiProduct {
   id: number;
   name: string;
   sku: string;
@@ -146,52 +146,118 @@ async function searchTerm(term: string): Promise<LotusApiProduct[]> {
   return products;
 }
 
-export const lotussScraper: Scraper = {
-  sourceSlug: "lotuss",
-  async scrape(): Promise<ScrapedPrice[]> {
-    const allPrices: ScrapedPrice[] = [];
-    const today = new Date();
-    const entries = Object.entries(LOTUS_TRACKED_PRODUCTS);
+/**
+ * Filter Lotus API products for a tracked product name using alias-aware
+ * matching. Lotus's search titles frequently deviate from our tracked names:
+ *
+ * - "หมูสับ" is titled "หมูบด" / "หมูบดอนามัย" / "เนื้อหมูบด"
+ * - "หมูคอสไลซ์" is titled "หมูสันคอสไลซ์" / "คอหมูสไลซ์" / "สันคอหมูสไลซ์"
+ *   (substring broken by "สัน" or reversed Thai word order)
+ *
+ * Two-phase matching (per tracked name):
+ * 1. Strict phase: title contains the tracked name verbatim. Any strict match
+ *    wins — aliases are never blended in when direct candidates exist.
+ * 2. Fallback phase (only when the strict phase yields ZERO candidates):
+ *    - "หมูสับ" → "หมูบดอนามัย" / "เนื้อหมูบด". Plain "หมูบด" is deliberately
+ *      excluded because it belongs to the separate "หมูบด" (pork-ground)
+ *      tracked product.
+ *    - "หมูคอสไลซ์" → "สันคอ" / "หมูคอ" / "คอหมู" keyword match. "คอไก่"
+ *      (chicken neck) is guarded against — it contains "คอ" but no pork-neck
+ *      keyword.
+ */
+export function filterLotusCandidates(
+  products: LotusApiProduct[],
+  trackedName: string,
+): LotusApiProduct[] {
+  const strict = products.filter((p) => p.name.includes(trackedName));
+  if (strict.length > 0) return strict;
 
-    for (let i = 0; i < entries.length; i += SEARCH_CONCURRENCY) {
-      const chunk = entries.slice(i, i + SEARCH_CONCURRENCY);
-      const chunkResults = await Promise.all(
-        chunk.map(async ([trackedName, term]) => {
-          try {
-            const products = await searchTerm(term);
-            const candidates = products
-              .map((p) => ({ product: p, price: p.priceRange.minimumPrice.finalPrice.value }))
-              .filter((c) => c.product.name.includes(trackedName))
-              .filter((c) => c.price >= MIN_PRICE && c.price <= MAX_PRICE);
+  if (trackedName === "หมูคอสไลซ์") {
+    return products.filter(
+      (p) =>
+        !p.name.includes("คอไก่") &&
+        (p.name.includes("สันคอ") || p.name.includes("หมูคอ") || p.name.includes("คอหมู")),
+    );
+  }
 
-            if (candidates.length === 0) return null;
+  if (trackedName === "หมูสับ") {
+    return products.filter(
+      (p) => p.name.includes("หมูบดอนามัย") || p.name.includes("เนื้อหมูบด"),
+    );
+  }
 
-            const cheapest = candidates.reduce((a, b) => (a.price < b.price ? a : b));
-            return {
-              sourceProductName: trackedName,
-              price: cheapest.price,
-              productTitle: cheapest.product.name,
-            };
-          } catch (error) {
-            console.error(`[Lotus's] Error scraping "${trackedName}":`, error);
-            return null;
-          }
-        }),
-      );
+  return [];
+}
 
-      for (const result of chunkResults) {
-        if (result === null) continue;
-        allPrices.push({
-          sourceProductName: result.sourceProductName,
-          price: result.price,
-          unit: "บาท/ชิ้น",
-          provinceCode: null,
-          sourceDate: today,
-          productTitle: result.productTitle,
-        });
+  export const lotussScraper: Scraper = {
+    sourceSlug: "lotuss",
+    async scrape(): Promise<ScrapedPrice[]> {
+      const allPrices: ScrapedPrice[] = [];
+      const today = new Date();
+      const entries = Object.entries(LOTUS_TRACKED_PRODUCTS);
+
+      for (let i = 0; i < entries.length; i += SEARCH_CONCURRENCY) {
+        const chunk = entries.slice(i, i + SEARCH_CONCURRENCY);
+        const chunkResults = await Promise.all(
+          chunk.map(async ([trackedName, term]) => {
+            try {
+              const products = await searchTerm(term);
+              const candidates = filterLotusCandidates(products, trackedName)
+                .map((p) => ({ product: p, price: p.priceRange.minimumPrice.finalPrice.value }))
+                .filter((c) => c.price >= MIN_PRICE && c.price <= MAX_PRICE);
+
+              if (candidates.length === 0) return null;
+
+              // Add sanity check for per-kg prices (should be above 60-70 THB/kg for meat)
+              const sanityFiltered = candidates.filter(c => {
+                const unit = detectUnitFromTitle(c.product.name);
+                if (unit === "บาท/กก." || unit === "บาท/ลิตร") {
+                  return c.price >= 60; // Reasonable lower bound for per-unit weight prices
+                }
+                return true;
+              });
+
+              const validCandidates = sanityFiltered.length > 0 ? sanityFiltered : candidates;
+
+              const cheapest = validCandidates.reduce((a, b) => (a.price < b.price ? a : b));
+              return {
+                sourceProductName: trackedName,
+                price: cheapest.price,
+                productTitle: cheapest.product.name,
+                unit: detectUnitFromTitle(cheapest.product.name) || "บาท/ชิ้น",
+              };
+            } catch (error) {
+              console.error(`[Lotus's] Error scraping "${trackedName}":`, error);
+              return null;
+            }
+          }),
+        );
+
+        for (const result of chunkResults) {
+          if (result === null) continue;
+          allPrices.push({
+            sourceProductName: result.sourceProductName,
+            price: result.price,
+            unit: result.unit || "บาท/ชิ้น",
+            provinceCode: null,
+            sourceDate: today,
+            productTitle: result.productTitle,
+          });
+        }
       }
-    }
 
-    return allPrices;
-  },
-};
+      return allPrices;
+    },
+  };
+
+  function detectUnitFromTitle(title: string): string | null {
+    // Detect per-kg units from title patterns
+    if (title.includes("กก.ละ") || title.includes("กก.") || title.includes("กิโลกรัม")) {
+      return "บาท/กก.";
+    }
+    if (title.includes("ลิตร")) {
+      return "บาท/ลิตร";
+    }
+    // Pack items (default to บาท/ชิ้น)
+    return null;
+  }
