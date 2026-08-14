@@ -23,7 +23,7 @@ import { fetchHtml, fetchJson } from "./types";
 /* ---------- Step 1: Typesense response types ---------- */
 
 /** Shape of a product document from Makro's Typesense search results. */
-interface MakroProductDocument {
+export interface MakroProductDocument {
   title: string;
   titleEn: string;
   displayPrice: number;
@@ -41,21 +41,21 @@ interface MakroProductDocument {
   unitFactor: number;
 }
 
-interface MakroSearchHit {
+export interface MakroSearchHit {
   document: MakroProductDocument;
 }
 
-interface MakroSearchResult {
+export interface MakroSearchResult {
   found: number;
   hits: MakroSearchHit[];
   page: number;
 }
 
-interface MakroCategoryPageProps {
+export interface MakroCategoryPageProps {
   initialSearchResult: MakroSearchResult;
 }
 
-interface MakroCategoryResponse {
+export interface MakroCategoryResponse {
   pageProps: MakroCategoryPageProps;
 }
 
@@ -82,14 +82,37 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const MAX_PAGES = 3;
+
 async function fetchCategoryProducts(
   buildId: string,
   categorySlug: string,
 ): Promise<MakroProductDocument[]> {
-  const url = `${MAKRO_BASE}/_next/data/${buildId}/th/c/${categorySlug}.json`;
-  const data = await fetchJson<MakroCategoryResponse>(url);
-  const hits = data?.pageProps?.initialSearchResult?.hits ?? [];
-  return hits.map((h) => h.document);
+  const products: MakroProductDocument[] = [];
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const url = page === 1
+      ? `${MAKRO_BASE}/_next/data/${buildId}/th/c/${categorySlug}.json`
+      : `${MAKRO_BASE}/_next/data/${buildId}/th/c/${categorySlug}.json?page=${page}`;
+    try {
+      const data = await fetchJson<MakroCategoryResponse>(url);
+      const searchResult = data?.pageProps?.initialSearchResult;
+      if (!searchResult || (searchResult.hits ?? []).length === 0) break;
+
+      // Guard: if API returns a page number different from the one we
+      // requested, it's ignoring pagination. Stop fetching further pages.
+      if (searchResult.page !== page) break;
+
+      products.push(...searchResult.hits.map((h) => h.document));
+    } catch (error) {
+      // On 404, we should propagate to the retry logic (build ID re-detection)
+      if (error instanceof Error && error.message.includes("404")) {
+        throw error;
+      }
+      // On any other error (malformed, network, etc.), log and continue
+      console.error(`[Makro] Failed to fetch category ${categorySlug} page ${page}:`, error);
+    }
+  }
+  return products;
 }
 
 /* ---------- Step 4: Product name matching ---------- */
@@ -168,8 +191,21 @@ const nfc = (s: string): string => s.normalize("NFC").replace(/\u0E4D\u0E32/g, "
 /**
  * Substring match between a Makro title and a tracked product name. The
  * ปลาร้า exclusion stops "น้ำปลาร้า" (fermented fish) from matching "น้ำปลา".
+ *
+ * Special handling for "หมูคอสไลซ์": matches "หมูคอ" or "สันคอ" but NOT
+ * generic "หมูสไลซ์" that lacks any neck-related keyword.
+ *
+ * `title` and `trackedName` are expected to already be NFC-folded (callers
+ * pass `nfc(...)`), so no extra normalization happens here.
  */
 function matchesName(title: string, trackedName: string): boolean {
+  if (trackedName === "หมูคอสไลซ์") {
+    // Must contain a neck-related keyword. "คอหมู" is a contiguous substring
+    // (reversed Thai word order, e.g. "คอหมูสําเร็จย่าง 1 กก."); "คอไก่" must
+    // NOT match because it lacks the หมู prefix.
+    if (title.includes("สันคอ") || title.includes("หมูคอ") || title.includes("คอหมู")) return true;
+    return false;
+  }
   if (!title.includes(trackedName)) return false;
   if (trackedName === "น้ำปลา" && title.includes("ปลาร้า")) return false;
   return true;
