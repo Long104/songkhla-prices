@@ -118,31 +118,64 @@ export const lotussScraper: Scraper = {
         if (!html) continue;
 
         const $ = cheerio.load(html);
-        const bodyText = $("body").text();
 
-        // Find all ฿-prefixed prices in the body text
+        // Collect every ฿-prefixed price node with its position in the body
+        // text so we can locate the nearest enclosing product container.
+        const bodyText = $("body").text();
         const pricePattern = /฿([0-9,]+(?:\.[0-9]{2})?)/g;
         let match: RegExpExecArray | null;
-        const candidates: { price: number; precedingText: string }[] = [];
+        const priceNodes: { index: number; price: number }[] = [];
 
         while ((match = pricePattern.exec(bodyText)) !== null) {
           const price = parsePrice(match[1]);
           if (price < MIN_PRICE || price > MAX_PRICE) continue;
-
-          // Check if the tracked product name appears within 200 chars
-          // BEFORE this price occurrence (same product card)
-          const priceStart = match.index;
-          const windowStart = Math.max(0, priceStart - 200);
-          const precedingText = bodyText.slice(windowStart, priceStart);
-
-          if (precedingText.includes(trackedName)) {
-            candidates.push({ price, precedingText });
-          }
+          priceNodes.push({ index: match.index, price });
         }
+
+        if (priceNodes.length === 0) continue;
+
+        // For each price node, find the nearest product container element in the
+        // DOM (walk up from the text node that contains the ฿ symbol). Only the
+        // text INSIDE that container is considered — this prevents cross-card
+        // price contamination even when titles/weights are far from the price.
+        const candidates: { price: number; containerText: string }[] = [];
+
+        $("body")
+          .find("*")
+          .contents()
+          .each((_i, node) => {
+            if (node.type !== "text") return;
+            const text = (node as unknown as { data?: string }).data ?? "";
+            const bIndex = text.indexOf("฿");
+            if (bIndex === -1) return;
+            const globalPos = bodyText.indexOf(text, 0);
+            if (globalPos === -1) return;
+            const absPos = globalPos + bIndex;
+
+            // Match this text node to one of our collected price nodes.
+            const matched = priceNodes.find(
+              (p) => p.index === absPos || (p.index >= absPos && p.index <= absPos + text.length),
+            );
+            if (!matched) return;
+
+            // Walk up the DOM to the nearest sensible product container.
+            const el = (node as unknown as { parent?: unknown }).parent;
+            if (!el) return;
+            const $el = $(el as Parameters<typeof $>[0]);
+            const container =
+              $el.closest("article, [class*='product'], [class*='card'], [data-product], li, div").first();
+            const containerEl = container.length > 0 ? container : $el.closest("div").first();
+            const containerText = containerEl.length > 0 ? containerEl.text() : $el.text();
+
+            if (containerText.includes(trackedName)) {
+              candidates.push({ price: matched.price, containerText });
+            }
+          });
 
         if (candidates.length === 0) continue;
 
-        // Keep the cheapest matching price (likely the base variant)
+        // Keep the cheapest matching price (likely the base variant) and use its
+        // container text as the weight-bearing product title.
         const cheapestCandidate = candidates.reduce((a, b) => (a.price < b.price ? a : b));
         allPrices.push({
           sourceProductName: trackedName, // EXACT canonical name — matches product_source_mappings
@@ -150,7 +183,7 @@ export const lotussScraper: Scraper = {
           unit: "บาท/ชิ้น",
           provinceCode: null,
           sourceDate: today,
-          productTitle: cheapestCandidate.precedingText,
+          productTitle: cheapestCandidate.containerText.trim(),
         });
       } catch (error) {
         console.error(`[Lotus's] Error scraping "${trackedName}":`, error);
