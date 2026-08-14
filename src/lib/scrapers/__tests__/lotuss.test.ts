@@ -1,115 +1,213 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { lotussScraper } from "../lotuss";
-import * as browserless from "../browserless";
+import * as types from "../types";
 
-vi.mock("../browserless", () => ({
-  fetchRenderedHtml: vi.fn(),
-}));
+vi.mock("../types", async (importOriginal) => {
+  const original = await importOriginal<typeof types>();
+  return {
+    ...original,
+    fetchJson: vi.fn(),
+  };
+});
+
+interface LotusApiProduct {
+  id: number;
+  name: string;
+  sku: string;
+  priceRange: {
+    minimumPrice: {
+      finalPrice: {
+        value: number;
+      };
+    };
+  };
+}
+
+interface LotusSearchResponse {
+  data: {
+    products: LotusApiProduct[];
+    hasMore: boolean;
+  };
+}
+
+const makeProduct = (name: string, price: number, id: number = 1, sku: string = "sku"): LotusApiProduct => ({
+  id,
+  name,
+  sku,
+  priceRange: {
+    minimumPrice: {
+      finalPrice: {
+        value: price,
+      },
+    },
+  },
+});
+
+const mockApiResponse = (products: LotusApiProduct[], hasMore: boolean = false): LotusSearchResponse => ({
+  data: {
+    products,
+    hasMore,
+  },
+});
 
 describe("lotussScraper", () => {
-  it("extracts valid product prices within ฿5–฿2000 range", async () => {
-    const mockHtml = `
-      <html><body>
-        <div>
-          <p>หมูสามชั้น 150 กรัม</p>
-          <span>฿39.00</span>
-        </div>
-        <div>
-          <p>หมูสามชั้น 300 กรัม</p>
-          <span>฿69.00</span>
-        </div>
-      </body></html>
-    `;
-    vi.mocked(browserless.fetchRenderedHtml).mockResolvedValue(mockHtml);
-
-    const results = await lotussScraper.scrape();
-
-    const porkBelly = results.find((r) => r.sourceProductName === "หมูสามชั้น");
-    expect(porkBelly).toBeDefined();
-    expect(porkBelly?.price).toBe(39); // cheapest variant
-    expect(porkBelly?.unit).toBe("บาท/ชิ้น");
+  beforeEach(() => {
+    vi.useFakeTimers();
   });
 
-  it("filters out prices above ฿2000 (phone numbers, cart totals)", async () => {
-    const mockHtml = `
-      <html><body>
-        <div>หมูสามชั้น ฿45.00</div>
-        <div>โทร. 02-150-9999 ฿2500</div>
-        <div>ราคากลางทั่วประเทศ ฿2339</div>
-      </body></html>
-    `;
-    vi.mocked(browserless.fetchRenderedHtml).mockResolvedValue(mockHtml);
-
-    const results = await lotussScraper.scrape();
-
-    const porkBelly = results.find((r) => r.sourceProductName === "หมูสามชั้น");
-    expect(porkBelly).toBeDefined();
-    expect(porkBelly?.price).toBe(45); // only the valid price
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
   });
 
-  it("outputs canonical tracked name as sourceProductName", async () => {
-    const mockHtml = `<html><body><div>หมูสามชั้นสไลซ์ 150 กรัม ฿39.00</div></body></html>`;
-    vi.mocked(browserless.fetchRenderedHtml).mockResolvedValue(mockHtml);
-    const results = await lotussScraper.scrape();
-    const exact = results.find((r) => r.sourceProductName === "หมูสามชั้น");
-    expect(exact).toBeDefined();
+  async function runScrape(): Promise<types.ScrapedPrice[]> {
+    const promise = lotussScraper.scrape();
+    await vi.runAllTimersAsync();
+    return promise;
+  }
+
+  it("returns cheapest matching product per tracked term", async () => {
+    vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === "ซี่โครงหมู") {
+        return mockApiResponse([
+          makeProduct("ซีพี ซี่โครงหมูหั่นชิ้น 500 กรัม", 129),
+          makeProduct("โลตัส ซี่โครงหมู 250 กรัม", 89),
+          makeProduct("ไก่สด", 99),
+        ]);
+      }
+      return mockApiResponse([]);
+    });
+
+    const results = await runScrape();
+    const porkRibs = results.find((r) => r.sourceProductName === "ซี่โครงหมู");
+
+    expect(porkRibs).toBeDefined();
+    expect(porkRibs?.price).toBe(89);
   });
 
-  it("returns empty when no valid prices found", async () => {
-    const mockHtml = `<html><body>ไม่มีสินค้า ฿0 หรือ ฿9999</body></html>`;
-    vi.mocked(browserless.fetchRenderedHtml).mockResolvedValue(mockHtml);
-    const results = await lotussScraper.scrape();
-    expect(results.filter((r) => r.sourceProductName === "หมูสามชั้น").length).toBe(0);
+  it("productTitle is the full API title with weight text", async () => {
+    const fullTitle = "โลตัส ซี่โครงหมู 250 กรัม";
+    vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === "ซี่โครงหมู") {
+        return mockApiResponse([makeProduct(fullTitle, 89)]);
+      }
+      return mockApiResponse([]);
+    });
+
+    const results = await runScrape();
+    const porkRibs = results.find((r) => r.sourceProductName === "ซี่โครงหมู");
+
+    expect(porkRibs).toBeDefined();
+    expect(porkRibs?.productTitle).toBe(fullTitle);
   });
 
-  it("handles browserless returning null gracefully", async () => {
-    vi.mocked(browserless.fetchRenderedHtml).mockResolvedValue(null);
-    const results = await lotussScraper.scrape();
-    expect(results.length).toBe(0);
+  it("sourceProductName equals dictionary key, not the API title", async () => {
+    const fullTitle = "โลตัส ซี่โครงหมู 250 กรัม";
+    vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === "ซี่โครงหมู") {
+        return mockApiResponse([makeProduct(fullTitle, 89)]);
+      }
+      return mockApiResponse([]);
+    });
+
+    const results = await runScrape();
+    const porkRibs = results.find((r) => r.price === 89);
+
+    expect(porkRibs).toBeDefined();
+    expect(porkRibs?.sourceProductName).toBe("ซี่โครงหมู");
   });
 
-  it("extracts Lotus weight and title from the nearest product card", async () => {
-    const mockHtml = `
-      <html><body>
-        <article>
-          <h3>Some other product</h3>
-          <span>฿99</span>
-        </article>
-        <article>
-          <h3>หมูคอสไลซ์ แพ็คสุดคุ้ม 500 กรัม อร่อยมากจริงๆนะ</h3>
-          <p>This is a very long description that goes on and on and on for more than 200 characters just to prove a point about the context window being too small for this kind of extraction and why it is important to scope the text search to the product card instead of the whole body text. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-          <span>฿159.50</span>
-        </article>
-      </body></html>
-    `;
-    vi.mocked(browserless.fetchRenderedHtml).mockResolvedValue(mockHtml);
+  it("skips products outside 5–2000 price bounds", async () => {
+    vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === "ซี่โครงหมู") {
+        return mockApiResponse([
+          makeProduct("โลตัส ซี่โครงหมู", 2001),
+          makeProduct("โลตัส ซี่โครงหมู", 4),
+          makeProduct("โลตัส ซี่โครงหมู", 100),
+        ]);
+      }
+      return mockApiResponse([]);
+    });
 
-    const results = await lotussScraper.scrape();
-    const porkNeck = results.find((r) => r.sourceProductName === "หมูคอสไลซ์");
+    const results = await runScrape();
+    const porkRibs = results.find((r) => r.sourceProductName === "ซี่โครงหมู");
 
-    expect(porkNeck).toBeDefined();
-    expect(porkNeck?.price).toBe(159.5);
-    expect(porkNeck?.productTitle).toContain("หมูคอสไลซ์ แพ็คสุดคุ้ม 500 กรัม");
-    expect(porkNeck?.productTitle).not.toContain("Some other product");
+    expect(porkRibs).toBeDefined();
+    expect(porkRibs?.price).toBe(100);
   });
 
-  it("does not associate a price with a neighboring Lotus card", async () => {
-    const mockHtml = `
-      <html><body>
-        <div class="product-card">
-          <h4>หมูคอสไลซ์ -- สินค้าหมด</h4>
-          <p>ขออภัย, สินค้าหมดสต็อกชั่วคราว</p>
-        </div>
-        <div class="product-card">
-          <h4>ไก่ทอดคาราเกะ</h4>
-          <p>อร่อย</p>
-          <span>฿129.00</span>
-        </div>
-      </body></html>
-    `;
-    vi.mocked(browserless.fetchRenderedHtml).mockResolvedValue(mockHtml);
-    const results = await lotussScraper.scrape();
-    const porkNeck = results.find((r) => r.sourceProductName === "หมูคอสไลซ์");
-    expect(porkNeck).toBeUndefined();
+  it("skips term when API returns empty product list", async () => {
+    vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === "unobtainium") {
+        return mockApiResponse([]);
+      }
+      return mockApiResponse([makeProduct(body.keyword, 89)]);
+    });
+
+    const results = await runScrape();
+    const unobtainium = results.find((r) => r.sourceProductName === "unobtainium");
+    const otherProducts = results.filter((r) => r.sourceProductName !== "unobtainium");
+
+    expect(unobtainium).toBeUndefined();
+    expect(otherProducts.length).toBeGreaterThan(0);
+  });
+
+  it("continues other terms when one term's fetch rejects", async () => {
+    const errorTerm = "หมูสะโพก";
+    vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === errorTerm) {
+        return Promise.reject(new Error("API error"));
+      }
+      return mockApiResponse([makeProduct(`${body.keyword} a`, 100)]);
+    });
+
+    const results = await runScrape();
+    const failedProduct = results.find((r) => r.sourceProductName === errorTerm);
+
+    expect(failedProduct).toBeUndefined();
+    expect(results.length).toBeGreaterThan(0);
+  });
+
+  it("fetches page 2 when page 1 signals more pages and returns cheapest", async () => {
+    vi.mocked(types.fetchJson).mockImplementation(async (url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === "ซี่โครงหมู") {
+        if (String(url).includes("page=2")) {
+          return mockApiResponse([makeProduct("โลตัส ซี่โครงหมู หน้า2", 90)], false);
+        }
+        return mockApiResponse([makeProduct("โลตัส ซี่โครงหมู หน้า1", 100)], true);
+      }
+      return mockApiResponse([]);
+    });
+
+    const results = await runScrape();
+    const porkRibs = results.find((r) => r.sourceProductName === "ซี่โครงหมู");
+
+    expect(porkRibs?.price).toBe(90);
+    const fetchCalls = vi.mocked(types.fetchJson).mock.calls;
+    expect(fetchCalls.some((c) => String(c[0]).includes("page=2"))).toBe(true);
+  });
+
+  it("sends captured browser headers in every request", async () => {
+    vi.mocked(types.fetchJson).mockResolvedValue(mockApiResponse([]));
+
+    await runScrape();
+
+    const fetchCalls = vi.mocked(types.fetchJson).mock.calls;
+    expect(fetchCalls.length).toBeGreaterThan(0);
+
+    for (const call of fetchCalls) {
+      const init = call[1];
+      expect(init?.headers).toEqual({
+        "content-type": "application/json",
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+      });
+    }
   });
 });
