@@ -57,6 +57,9 @@ export default async function ProductPage({
             sources.type as "sourceType",
             prices.price,
             prices.unit,
+            prices.normalized_price as "normalizedPrice",
+            prices.normalized_unit as "normalizedUnit",
+            prices.weight_grams as "weightGrams",
             prices.source_date as "sourceDate",
             prices.province_id as "provinceId"
           FROM prices
@@ -73,6 +76,9 @@ export default async function ProductPage({
           sourceType: string;
           price: string;
           unit: string;
+          normalizedPrice: string | null;
+          normalizedUnit: string | null;
+          weightGrams: number | null;
           sourceDate: string;
           provinceId: number | null;
         }>;
@@ -85,6 +91,9 @@ export default async function ProductPage({
           sourceType: r.sourceType,
           price: r.price,
           unit: r.unit,
+          normalizedPrice: r.normalizedPrice,
+          normalizedUnit: r.normalizedUnit,
+          weightGrams: r.weightGrams,
           sourceDate: r.sourceDate,
           isNational: r.provinceId === null,
         }));

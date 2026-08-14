@@ -3,16 +3,18 @@ import { UnitWarningBadge } from "./unit-warning-badge";
 import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { normalizePriceAndUnit } from "@/lib/unit-normalizer";
 
 export interface PriceRow {
-  productName: string; // Added to pass to normalizePriceAndUnit
+  productName: string;
   sourceSlug: string;
   sourceNameTh: string;
   sourceNameEn: string;
   sourceType: string;
   price: string;
   unit: string;
+  normalizedPrice: string | null;
+  normalizedUnit: string | null;
+  weightGrams: number | null;
   sourceDate: string;
   isNational: boolean;
 }
@@ -30,12 +32,16 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
 
   const normalizedRows = rows.map((r) => ({
     ...r,
-    ...normalizePriceAndUnit(parseFloat(r.price), r.unit, r.productName),
+    displayPrice: r.normalizedPrice ? parseFloat(r.normalizedPrice) : parseFloat(r.price),
+    displayUnit: r.normalizedUnit ?? r.unit,
+    originalPrice: parseFloat(r.price),
+    originalUnit: r.unit,
+    weightText: r.weightGrams ? `${r.weightGrams} กรัม` : null,
   }));
 
-  const sorted = [...normalizedRows].sort((a, b) => a.normalizedPrice - b.normalizedPrice);
-  const cheapestPrice = sorted[0].normalizedPrice;
-  const units = new Set(normalizedRows.map((r) => r.normalizedUnit));
+  const sorted = [...normalizedRows].sort((a, b) => a.displayPrice - b.displayPrice);
+  const cheapestPrice = sorted[0].displayPrice;
+  const units = new Set(normalizedRows.map((r) => r.displayUnit));
   const hasMismatch = units.size > 1;
 
   return (
@@ -49,9 +55,9 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
         </div>
         <ul className="space-y-2">
         {sorted.map((row, i) => {
-          const isCheapest = row.normalizedPrice === cheapestPrice;
+          const isCheapest = row.displayPrice === cheapestPrice;
           const name = locale === "th" ? row.sourceNameTh : row.sourceNameEn;
-          const showSecondary = row.normalizedUnit === "บาท/กก." && row.originalUnit !== "บาท/กก.";
+          const showSecondary = row.displayUnit === "บาท/กก." && row.originalUnit !== "บาท/กก.";
 
           return (
             <li
@@ -87,7 +93,7 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
                     isCheapest ? "text-green-700" : "text-zinc-800"
                   )}
                 >
-                  ฿{row.normalizedPrice.toFixed(2)}/{row.normalizedUnit.split("/")[1] || "unit"}
+                  ฿{row.displayPrice.toFixed(2)}/{row.displayUnit.split("/")[1] || "unit"}
                 </p>
                 {showSecondary && (
                   <p className="text-[10px] text-zinc-400">

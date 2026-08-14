@@ -1,7 +1,6 @@
 import { and, eq, isNull, max, or, sql, type SQL } from "drizzle-orm";
 import { categories, prices, products, provinces, sources } from "@/db/schema";
 import type { Db } from "@/db";
-import { normalizePriceAndUnit } from "@/lib/unit-normalizer";
 
 /**
  * Resolve a DOPA province code (e.g. "90" = Songkhla) to its DB id.
@@ -61,6 +60,9 @@ export async function getProductsWithCheapestPrice(
           SELECT DISTINCT ON (prices.source_id)
             prices.price,
             prices.unit,
+            prices.normalized_price as "normalizedPrice",
+            prices.normalized_unit as "normalizedUnit",
+            prices.weight_grams as "weightGrams",
             prices.source_id as "sourceId",
             sources.name_th as "sourceNameTh",
             sources.name_en as "sourceNameEn"
@@ -72,6 +74,9 @@ export async function getProductsWithCheapestPrice(
         const priceRows = result.rows as unknown as Array<{
           price: string;
           unit: string;
+          normalizedPrice: string | null;
+          normalizedUnit: string | null;
+          weightGrams: number | null;
           sourceId: number;
           sourceNameTh: string;
           sourceNameEn: string | null;
@@ -85,17 +90,18 @@ export async function getProductsWithCheapestPrice(
         let maxUnit: string | null = null;
 
         for (const r of priceRows) {
-          const normalized = normalizePriceAndUnit(Number(r.price), r.unit, p.nameTh);
+          const normPrice = r.normalizedPrice ? Number(r.normalizedPrice) : Number(r.price);
+          const normUnit = r.normalizedUnit ?? r.unit;
           
-          if (cheapestPrice === null || normalized.normalizedPrice < cheapestPrice) {
-            cheapestPrice = normalized.normalizedPrice;
-            cheapestUnit = normalized.normalizedUnit;
+          if (cheapestPrice === null || normPrice < cheapestPrice) {
+            cheapestPrice = normPrice;
+            cheapestUnit = normUnit;
             cheapestSourceNameTh = r.sourceNameTh;
             cheapestSourceNameEn = r.sourceNameEn;
           }
-          if (maxPrice === null || normalized.normalizedPrice > maxPrice) {
-            maxPrice = normalized.normalizedPrice;
-            maxUnit = normalized.normalizedUnit;
+          if (maxPrice === null || normPrice > maxPrice) {
+            maxPrice = normPrice;
+            maxUnit = normUnit;
           }
         }
 
@@ -178,6 +184,8 @@ export async function getRecentPriceChanges(
         nameEn: products.nameEn,
         price: prices.price,
         unit: prices.unit,
+        normalizedPrice: prices.normalizedPrice,
+        normalizedUnit: prices.normalizedUnit,
         sourceNameTh: sources.nameTh,
         sourceNameEn: sources.nameEn,
         sourceDate: prices.sourceDate,
@@ -189,7 +197,8 @@ export async function getRecentPriceChanges(
 
     const byProduct = new Map<string, PriceChangeItem>();
     for (const r of rows) {
-      const num = Number(r.price);
+      const num = r.normalizedPrice ? Number(r.normalizedPrice) : Number(r.price);
+      const unit = r.normalizedUnit ?? r.unit;
       const existing = byProduct.get(r.slug);
       if (!existing || num < existing.minPrice) {
         byProduct.set(r.slug, {
@@ -197,7 +206,7 @@ export async function getRecentPriceChanges(
           nameTh: r.nameTh,
           nameEn: r.nameEn,
           minPrice: num,
-          minUnit: r.unit,
+          minUnit: unit,
           sourceNameTh: r.sourceNameTh,
           sourceNameEn: r.sourceNameEn,
           sourceDate: r.sourceDate,

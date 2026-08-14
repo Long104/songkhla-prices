@@ -85,6 +85,12 @@ export const prices = pgTable(
     provinceId: integer("province_id").references(() => provinces.id),
     price: numeric("price", { precision: 10, scale: 2 }).notNull(),
     unit: varchar("unit", { length: 50 }).notNull(),
+    /** Per-kg equivalent price when weight is known; otherwise equals `price`. */
+    normalizedPrice: numeric("normalized_price", { precision: 10, scale: 2 }),
+    /** Canonical unit word from unit-dictionary (e.g., "บาท/กก.", "บาท/แพ็ค"). */
+    normalizedUnit: varchar("normalized_unit", { length: 50 }),
+    /** Extracted weight in grams from product title; NULL when unknown. */
+    weightGrams: integer("weight_grams"),
     scrapedAt: timestamp("scraped_at", { withTimezone: true }).notNull(),
     /** The date the source reports (may differ from scrape date) */
     sourceDate: date("source_date").notNull(),

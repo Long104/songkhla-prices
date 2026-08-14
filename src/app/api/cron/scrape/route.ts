@@ -1,3 +1,4 @@
+import { normalizeAtIngest } from "@/lib/normalize-ingest";
 import { NextRequest, NextResponse } from "next/server";
 import { scrapers } from "@/lib/scrapers";
 import { getDb } from "@/db";
@@ -65,6 +66,12 @@ export async function POST(req: NextRequest) {
             if (prov) provinceId = prov.id;
           }
 
+          const normalized = normalizeAtIngest(
+            sp.price,
+            sp.unit,
+            sp.productTitle ?? sp.sourceProductName,
+          );
+
           await db
             .insert(prices)
             .values({
@@ -73,6 +80,9 @@ export async function POST(req: NextRequest) {
               provinceId,
               price: sp.price.toString(),
               unit: sp.unit,
+              normalizedPrice: normalized.normalizedPrice.toString(),
+              normalizedUnit: normalized.normalizedUnit,
+              weightGrams: normalized.weightGrams,
               scrapedAt: new Date(),
               sourceDate: toDateOnly(sp.sourceDate),
             })
