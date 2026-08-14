@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { lotussScraper } from "../lotuss";
+import { filterLotusCandidates, lotussScraper, type LotusApiProduct } from "../lotuss";
 import * as types from "../types";
 
 vi.mock("../types", async (importOriginal) => {
@@ -10,26 +10,6 @@ vi.mock("../types", async (importOriginal) => {
   };
 });
 
-interface LotusApiProduct {
-  id: number;
-  name: string;
-  sku: string;
-  priceRange: {
-    minimumPrice: {
-      finalPrice: {
-        value: number;
-      };
-    };
-  };
-}
-
-interface LotusSearchResponse {
-  data: {
-    products: LotusApiProduct[];
-    hasMore: boolean;
-  };
-}
-
 const makeProduct = (name: string, price: number, id: number = 1, sku: string = "sku"): LotusApiProduct => ({
   id,
   name,
@@ -38,6 +18,8 @@ const makeProduct = (name: string, price: number, id: number = 1, sku: string = 
     minimumPrice: {
       finalPrice: {
         value: price,
+        currency: "THB",
+        currencyPrefix: "฿",
       },
     },
   },
@@ -209,5 +191,64 @@ describe("lotussScraper", () => {
         "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
       });
     }
+  });
+});
+
+describe("filterLotusCandidates", () => {
+  it("selects strict matches when available", () => {
+    const products = [makeProduct("หมูสับ แพ็คสุดคุ้ม", 100)];
+    const result = filterLotusCandidates(products, "หมูสับ");
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("หมูสับ แพ็คสุดคุ้ม");
+  });
+
+  it("falls back to alias 'หมูบดอนามัย' for 'หมูสับ' if no strict match", () => {
+    const products = [makeProduct("หมูบดอนามัย", 110), makeProduct("หมูบดธรรมดา", 90)];
+    const result = filterLotusCandidates(products, "หมูสับ");
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("หมูบดอนามัย");
+  });
+
+  it("falls back to alias 'เนื้อหมูบด' for 'หมูสับ' if no strict match", () => {
+    const products = [makeProduct("เนื้อหมูบด", 110), makeProduct("หมูบดธรรมดา", 90)];
+    const result = filterLotusCandidates(products, "หมูสับ");
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("เนื้อหมูบด");
+  });
+
+  it("does NOT fall back to plain 'หมูบด' for 'หมูสับ'", () => {
+    const products = [makeProduct("หมูบด", 90)];
+    const result = filterLotusCandidates(products, "หมูสับ");
+    expect(result).toHaveLength(0);
+  });
+
+  it("matches 'หมูคอสไลซ์' using 'สันคอ'", () => {
+    const products = [makeProduct("หมูสันคอสไลซ์ 500กรัม", 150)];
+    const result = filterLotusCandidates(products, "หมูคอสไลซ์");
+    expect(result).toHaveLength(1);
+  });
+
+  it("matches 'หมูคอสไลซ์' using 'คอหมู'", () => {
+    const products = [makeProduct("สุดคุ้ม คอหมูสไลซ์แช่แข็ง", 140)];
+    const result = filterLotusCandidates(products, "หมูคอสไลซ์");
+    expect(result).toHaveLength(1);
+  });
+
+  it("matches 'หมูคอสไลซ์' using 'หมูคอ'", () => {
+    const products = [makeProduct("เนื้อหมูคอ สไลซ์", 160)];
+    const result = filterLotusCandidates(products, "หมูคอสไลซ์");
+    expect(result).toHaveLength(1);
+  });
+
+  it("does NOT match 'คอไก่' for 'หมูคอสไลซ์'", () => {
+    const products = [makeProduct("คอไก่ย่าง", 50)];
+    const result = filterLotusCandidates(products, "หมูคอสไลซ์");
+    expect(result).toHaveLength(0);
+  });
+
+  it("returns empty array if no matches are found", () => {
+    const products = [makeProduct("ไก่สด", 99)];
+    const result = filterLotusCandidates(products, "หมูสับ");
+    expect(result).toHaveLength(0);
   });
 });

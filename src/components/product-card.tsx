@@ -4,15 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { shortUnit } from "@/lib/utils";
+import { type UnitFamilySummary } from "@/lib/unit-families";
 
 interface ProductCardProps {
   slug: string;
   nameTh: string;
   nameEn: string | null;
-  cheapestPrice: number | null;
-  cheapestUnit: string | null;
-  maxPrice: number | null;
-  maxUnit: string | null;
+  primarySummary: UnitFamilySummary | null;
+  secondarySummary: UnitFamilySummary | null;
   cheapestSourceNameTh: string | null;
   cheapestSourceNameEn: string | null;
   sourceCount: number;
@@ -23,10 +22,8 @@ export function ProductCard({
   slug,
   nameTh,
   nameEn,
-  cheapestPrice,
-  cheapestUnit,
-  maxPrice,
-  maxUnit,
+  primarySummary,
+  secondarySummary,
   cheapestSourceNameTh,
   cheapestSourceNameEn,
   sourceCount,
@@ -35,6 +32,11 @@ export function ProductCard({
   const t = useTranslations("common");
   const display = locale === "th" ? nameTh : nameEn ?? nameTh;
   const subtitle = locale === "th" ? nameEn : nameTh;
+
+  // For backward compatibility and cheapest source display
+  const cheapestPrice = primarySummary?.minPrice ?? null;
+  const cheapestUnit = primarySummary?.unitLabel ? `บาท/${primarySummary.unitLabel}` : null;
+  const maxPrice = primarySummary?.maxPrice ?? null;
 
   return (
     <Link href={`/${locale}/product/${slug}`} className="group">
@@ -61,9 +63,6 @@ export function ProductCard({
                 <span className="text-sm font-normal text-zinc-400">
                   {" "}
                   – ฿{Number(maxPrice).toFixed(2)}
-                  {maxUnit && maxUnit !== cheapestUnit && (
-                    <span className="text-xs">{shortUnit(maxUnit)}</span>
-                  )}
                 </span>
               )}
               {cheapestUnit && (
@@ -72,6 +71,20 @@ export function ProductCard({
                 </span>
               )}
             </p>
+            {primarySummary && (
+              <p className="mt-1 text-xs text-zinc-500">
+                {primarySummary.unitLabel && (
+                  <span>
+                    {primarySummary.unitLabel}
+                    {secondarySummary && (
+                      <span className="text-zinc-400">
+                        {"   "}เริ่มต้น ฿{Number(secondarySummary.minPrice).toFixed(2)} / {secondarySummary.unitLabel}
+                      </span>
+                    )}
+                  </span>
+                )}
+              </p>
+            )}
             {cheapestSourceNameTh && (
               <p className="mt-1 flex items-center gap-1 text-xs text-green-700">
                 <span className="rounded-full bg-green-50 px-1.5 py-0.5 font-medium">

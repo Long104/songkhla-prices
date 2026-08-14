@@ -1,6 +1,7 @@
-import { and, eq, isNull, max, or, sql, type SQL } from "drizzle-orm";
+import { eq, isNull, max, or, sql, type SQL } from "drizzle-orm";
 import { categories, prices, products, provinces, sources } from "@/db/schema";
 import type { Db } from "@/db";
+import { summarizePriceFamilies, type UnitFamilySummary } from "@/lib/unit-families";
 
 /**
  * Resolve a DOPA province code (e.g. "90" = Songkhla) to its DB id.
@@ -33,6 +34,8 @@ export interface ProductWithCheapestPrice {
   slug: string;
   nameTh: string;
   nameEn: string | null;
+  primarySummary: UnitFamilySummary | null;
+  secondarySummary: UnitFamilySummary | null;
   cheapestPrice: number | null;
   cheapestUnit: string | null;
   maxPrice: number | null;
@@ -82,6 +85,15 @@ export async function getProductsWithCheapestPrice(
           sourceNameEn: string | null;
         }>;
 
+        const priceInputRows = priceRows.map((r) => ({
+          price: r.normalizedPrice ? Number(r.normalizedPrice) : Number(r.price),
+          unit: r.normalizedUnit ?? r.unit,
+          sourceNameTh: r.sourceNameTh,
+          sourceNameEn: r.sourceNameEn,
+        }));
+
+        const { primarySummary, secondarySummary } = summarizePriceFamilies(priceInputRows);
+
         let cheapestPrice: number | null = null;
         let cheapestUnit: string | null = null;
         let cheapestSourceNameTh: string | null = null;
@@ -107,6 +119,8 @@ export async function getProductsWithCheapestPrice(
 
         return {
           ...p,
+          primarySummary,
+          secondarySummary,
           cheapestPrice,
           cheapestUnit,
           maxPrice,
@@ -118,6 +132,8 @@ export async function getProductsWithCheapestPrice(
       } catch {
         return {
           ...p,
+          primarySummary: null,
+          secondarySummary: null,
           cheapestPrice: null,
           cheapestUnit: null,
           maxPrice: null,

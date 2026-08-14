@@ -16,6 +16,7 @@
     "productsCount": "{count} สินค้า",
     "sourcesCount": "{count} แหล่ง",
     "cheapestAt": "ถูกสุดที่",
+    "cheapestAtUnit": "ถูกสุด {price}/{unit} ที่ {source}",
     "fromPrice": "เริ่มต้นที่",
     "baht": "บาท",
     "viewCategory": "ดูหมวดหมู่",
@@ -75,7 +76,16 @@
     "date": "อัพเดท",
     "categoryLabel": "หมวดหมู่",
     "from": "เทียบจาก",
-    "source_date": "อัพเดท"
+    "source_date": "อัพเดท",
+    "unitFamilyWeight": "ต่อกิโลกรัม",
+    "unitFamilyVolume": "ต่อลิตร",
+    "unitFamilyPack": "ต่อแพ็ค",
+    "unitFamilyCount": "ต่อ{unit}",
+    "fromPackStarting": "เริ่มต้น {price}/{unit}",
+    "approxPerKg": "≈ ฿{price}/กก.",
+    "weightSpecification": "{grams} กรัม",
+    "unitMultiInfo": "สินค้านี้มีหลายหน่วย เลือกสลับดูราคาตามหน่วยด้านบน",
+    "cheapestInFamily": "ถูกที่สุดในกลุ่มนี้"
   },
   "search": {
     "title": "ค้นหาสินค้า",

@@ -1,8 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { UnitWarningBadge } from "./unit-warning-badge";
+import { UnitInfoBanner } from "./unit-warning-badge";
 import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { classifyUnit, type UnitFamily } from "@/lib/unit-families";
+import { parseUnitWord, canonicalizeUnit } from "@/lib/unit-dictionary";
 
 export interface PriceRow {
   productName: string;
@@ -24,40 +29,149 @@ interface PriceTableProps {
   locale: string;
 }
 
+const FAMILY_PRECEDENCE: UnitFamily[] = ["weight", "volume", "pack", "count"];
+
 export function PriceTable({ rows, locale }: PriceTableProps) {
   const t = useTranslations("product");
   const tc = useTranslations("common");
 
+  // Enrich rows with classified family & prices
+  const processedRows = rows.map((r) => {
+    const rawPrice = parseFloat(r.price);
+    const normPrice = r.normalizedPrice ? parseFloat(r.normalizedPrice) : rawPrice;
+
+    // Determine family from raw unit first, fallback to normalizedUnit
+    const family = classifyUnit(r.unit) ?? classifyUnit(r.normalizedUnit ?? "") ?? "weight";
+
+    const rawUnitWord = canonicalizeUnit(parseUnitWord(r.unit));
+    const normUnitWord = canonicalizeUnit(parseUnitWord(r.normalizedUnit ?? r.unit));
+
+    return {
+      ...r,
+      family,
+      rawPrice,
+      normPrice,
+      rawUnitWord,
+      normUnitWord,
+    };
+  });
+
+  // Group by family
+  const familyMap = new Map<UnitFamily, typeof processedRows>();
+  for (const r of processedRows) {
+    const list = familyMap.get(r.family) ?? [];
+    list.push(r);
+    familyMap.set(r.family, list);
+  }
+
+  const availableFamilies = FAMILY_PRECEDENCE.filter((f) => familyMap.has(f) && (familyMap.get(f)?.length ?? 0) > 0);
+
+  // Default active tab: first available in precedence order
+  const [activeFamily, setActiveFamily] = useState<UnitFamily>(
+    availableFamilies[0] ?? "weight"
+  );
+
   if (rows.length === 0) return null;
 
-  const normalizedRows = rows.map((r) => ({
-    ...r,
-    displayPrice: r.normalizedPrice ? parseFloat(r.normalizedPrice) : parseFloat(r.price),
-    displayUnit: r.normalizedUnit ?? r.unit,
-    originalPrice: parseFloat(r.price),
-    originalUnit: r.unit,
-    weightText: r.weightGrams ? `${r.weightGrams} กรัม` : null,
-  }));
+  const currentFamily = availableFamilies.includes(activeFamily)
+    ? activeFamily
+    : availableFamilies[0] ?? "weight";
 
-  const sorted = [...normalizedRows].sort((a, b) => a.displayPrice - b.displayPrice);
-  const cheapestPrice = sorted[0].displayPrice;
-  const units = new Set(normalizedRows.map((r) => r.displayUnit));
-  const hasMismatch = units.size > 1;
+  const activeRows = familyMap.get(currentFamily) ?? [];
+
+  // In active tab, calculate display prices & sort ascending
+  const displayRows = activeRows.map((r) => {
+    // For pack family: show original pack price as primary (e.g. ฿49.00/แพ็ค)
+    // and if weightGrams present, compute per-kg equivalent subtext (≈ ฿245.00/กก. · 200g)
+    if (r.family === "pack") {
+      const primaryPrice = r.rawPrice;
+      const primaryUnit = r.rawUnitWord;
+      let perKgEquivalent: number | null = null;
+      if (r.weightGrams && r.weightGrams > 0) {
+        perKgEquivalent = Math.round((r.rawPrice / (r.weightGrams / 1000)) * 100) / 100;
+      } else if (r.normalizedUnit === "บาท/กก." && r.normalizedPrice) {
+        perKgEquivalent = r.normPrice;
+      }
+
+      return {
+        ...r,
+        sortPrice: primaryPrice,
+        displayPriceText: `฿${primaryPrice.toFixed(2)}/${primaryUnit}`,
+        perKgEquivalent,
+      };
+    }
+
+    // For weight/volume/count: show display price
+    const primaryPrice = r.rawPrice;
+    const primaryUnit = r.rawUnitWord;
+    return {
+      ...r,
+      sortPrice: primaryPrice,
+      displayPriceText: `฿${primaryPrice.toFixed(2)}/${primaryUnit}`,
+      perKgEquivalent: null,
+    };
+  });
+
+  displayRows.sort((a, b) => a.sortPrice - b.sortPrice);
+
+  const cheapestPrice = displayRows.length > 0 ? displayRows[0].sortPrice : null;
+
+  const getFamilyTabLabel = (fam: UnitFamily, count: number) => {
+    switch (fam) {
+      case "weight":
+        return `${t("unitFamilyWeight")} (${count})`;
+      case "volume":
+        return `${t("unitFamilyVolume")} (${count})`;
+      case "pack":
+        return `${t("unitFamilyPack")} (${count})`;
+      case "count": {
+        const firstCountUnit = activeRows[0]?.rawUnitWord ?? "ชิ้น";
+        return `${t("unitFamilyCount", { unit: firstCountUnit })} (${count})`;
+      }
+    }
+  };
 
   return (
     <div className="space-y-3">
-      {hasMismatch && <UnitWarningBadge />}
-
-        <div className="hidden grid-cols-[1fr,auto,auto] items-center gap-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-xs font-semibold text-zinc-500 md:grid">
-          <span>{t("source")}</span>
-          <span className="text-right">{t("price")}</span>
-          <span className="text-right">{t("date")}</span>
+      {/* Segmented control tabs (hidden if only 1 family) */}
+      {availableFamilies.length > 1 && (
+        <div className="flex flex-wrap gap-1.5 rounded-xl bg-zinc-100 p-1">
+          {availableFamilies.map((fam) => {
+            const count = familyMap.get(fam)?.length ?? 0;
+            const isActive = fam === currentFamily;
+            return (
+              <button
+                key={fam}
+                onClick={() => setActiveFamily(fam)}
+                className={cn(
+                  "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-all sm:text-sm",
+                  isActive
+                    ? "bg-white text-zinc-900 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-700"
+                )}
+              >
+                {getFamilyTabLabel(fam, count)}
+              </button>
+            );
+          })}
         </div>
-        <ul className="space-y-2">
-        {sorted.map((row, i) => {
-          const isCheapest = row.displayPrice === cheapestPrice;
+      )}
+
+      {/* Multi-unit info banner */}
+      <UnitInfoBanner familyCount={availableFamilies.length} />
+
+      {/* Table header */}
+      <div className="hidden grid-cols-[1fr,auto,auto] items-center gap-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-xs font-semibold text-zinc-500 md:grid">
+        <span>{t("source")}</span>
+        <span className="text-right">{t("price")}</span>
+        <span className="text-right">{t("date")}</span>
+      </div>
+
+      {/* Price row list */}
+      <ul className="space-y-2">
+        {displayRows.map((row, i) => {
+          const isCheapest = cheapestPrice !== null && row.sortPrice === cheapestPrice;
           const name = locale === "th" ? row.sourceNameTh : row.sourceNameEn;
-          const showSecondary = row.displayUnit === "บาท/กก." && row.originalUnit !== "บาท/กก.";
 
           return (
             <li
@@ -74,7 +188,7 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
                   <p className="truncate text-sm font-semibold text-zinc-800">
                     {name.replace("ราคากลางทั่วประเทศ", "")}
                     {isCheapest && (
-                      <Badge className="ml-2 bg-green-600 text-[11px]">
+                      <Badge className="ml-2 bg-green-600 text-[11px] text-white">
                         {tc("cheapest")}
                       </Badge>
                     )}
@@ -86,6 +200,7 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
                   </p>
                 </div>
               </div>
+
               <div className="mt-2 text-right md:mt-0">
                 <p
                   className={cn(
@@ -93,14 +208,16 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
                     isCheapest ? "text-green-700" : "text-zinc-800"
                   )}
                 >
-                  ฿{row.displayPrice.toFixed(2)}/{row.displayUnit.split("/")[1] || "unit"}
+                  {row.displayPriceText}
                 </p>
-                {showSecondary && (
-                  <p className="text-[10px] text-zinc-400">
-                    ({t("from")} ฿{row.originalPrice.toFixed(2)} / {row.weightText})
+
+                {row.perKgEquivalent !== null && (
+                  <p className="text-[11px] text-zinc-500">
+                    (≈ ฿{row.perKgEquivalent.toFixed(2)}/กก. · {row.weightGrams}g)
                   </p>
                 )}
               </div>
+
               <div className="mt-2 flex items-center justify-end text-xs text-zinc-400 md:mt-0 md:justify-end">
                 <span>
                   {t("source_date")}: {formatDate(row.sourceDate, locale)}

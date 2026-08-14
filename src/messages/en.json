@@ -16,6 +16,7 @@
     "productsCount": "{count} products",
     "sourcesCount": "{count} sources",
     "cheapestAt": "Cheapest at",
+    "cheapestAtUnit": "Cheapest {price}/{unit} at {source}",
     "fromPrice": "From",
     "baht": "THB",
     "viewCategory": "Browse categories",
@@ -75,7 +76,16 @@
     "date": "Updated",
     "categoryLabel": "Category",
     "from": "from",
-    "source_date": "Updated"
+    "source_date": "Updated",
+    "unitFamilyWeight": "Per Kg",
+    "unitFamilyVolume": "Per Liter",
+    "unitFamilyPack": "Per Pack",
+    "unitFamilyCount": "Per {unit}",
+    "fromPackStarting": "From {price}/{unit}",
+    "approxPerKg": "≈ ฿{price}/kg",
+    "weightSpecification": "{grams}g",
+    "unitMultiInfo": "Multiple units available. Switch tabs above to compare.",
+    "cheapestInFamily": "Cheapest in this unit"
   },
   "search": {
     "title": "Search products",
