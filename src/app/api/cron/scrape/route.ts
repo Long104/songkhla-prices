@@ -1,15 +1,23 @@
-import { normalizeAtIngest } from "@/lib/normalize-ingest";
 import { NextRequest, NextResponse } from "next/server";
 import { scrapers } from "@/lib/scrapers";
-import { getDb } from "@/db";
-import { prices, productSourceMappings, sources, provinces } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { writeScraperResults } from "@/lib/scrapers/db-writer";
 
-/** Format a Date as local YYYY-MM-DD for the `date`-typed source_date column. */
-function toDateOnly(d: Date): string {
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${mm}-${dd}`;
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(message));
+    }, ms);
+
+    promise
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -19,92 +27,39 @@ export async function POST(req: NextRequest) {
   }
 
   const startTime = Date.now();
-  const results: Record<string, { status: string; count?: number; error?: string }> = {};
+  const ctx = {
+    results: {} as Record<string, { status: string; count?: number; error?: string }>,
+    unmapped: [] as string[],
+  };
   let totalInserted = 0;
-  const unmapped: string[] = [];
+  const PER_SCRAPER_TIMEOUT_MS = 240_000;
 
-  const scraperResults = await Promise.allSettled(scrapers.map((s) => s.scrape()));
-
-  for (let i = 0; i < scrapers.length; i++) {
-    const scraper = scrapers[i];
-    const result = scraperResults[i];
-
-    if (result.status === "fulfilled") {
-      const scrapedPrices = result.value;
-      results[scraper.sourceSlug] = { status: "ok", count: scrapedPrices.length };
-
-      const db = getDb();
-      if (!db) {
-        results[scraper.sourceSlug] = { status: "error", error: "Database not available" };
-        continue;
+  // Settle-as-you-go: each scraper's rows are written to the DB the moment
+  // that scraper settles, so one slow/hung scraper cannot starve the others.
+  await Promise.allSettled(
+    scrapers.map(async (scraper) => {
+      try {
+        const scraped = await withTimeout(
+          scraper.scrape(),
+          PER_SCRAPER_TIMEOUT_MS,
+          `${scraper.sourceSlug} timed out`,
+        );
+        const inserted = await writeScraperResults(scraper, scraped, ctx);
+        totalInserted += inserted;
+      } catch (err) {
+        ctx.results[scraper.sourceSlug] = {
+          status: "error",
+          error: err instanceof Error ? err.message : "Unknown error",
+        };
       }
-
-      for (const sp of scrapedPrices) {
-        try {
-          const [source] = await db.select().from(sources).where(eq(sources.slug, scraper.sourceSlug)).limit(1);
-          if (!source) continue;
-
-          const [mapping] = await db
-            .select()
-            .from(productSourceMappings)
-            .where(
-              and(
-                eq(productSourceMappings.sourceId, source.id),
-                eq(productSourceMappings.sourceProductName, sp.sourceProductName)
-              )
-            )
-            .limit(1);
-
-          if (!mapping) {
-            unmapped.push(sp.sourceProductName);
-            continue;
-          }
-
-          let provinceId: number | null = null;
-          if (sp.provinceCode) {
-            const [prov] = await db.select().from(provinces).where(eq(provinces.code, sp.provinceCode)).limit(1);
-            if (prov) provinceId = prov.id;
-          }
-
-          const normalized = normalizeAtIngest(
-            sp.price,
-            sp.unit,
-            sp.productTitle ?? sp.sourceProductName,
-          );
-
-          await db
-            .insert(prices)
-            .values({
-              productId: mapping.productId,
-              sourceId: source.id,
-              provinceId,
-              price: sp.price.toString(),
-              unit: sp.unit,
-              normalizedPrice: normalized.normalizedPrice.toString(),
-              normalizedUnit: normalized.normalizedUnit,
-              weightGrams: normalized.weightGrams,
-              scrapedAt: new Date(),
-              sourceDate: toDateOnly(sp.sourceDate),
-            })
-            .onConflictDoNothing();
-          totalInserted++;
-        } catch (err) {
-          console.error(`[cron] Failed to upsert price for "${sp.sourceProductName}":`, err);
-        }
-      }
-    } else {
-      results[scraper.sourceSlug] = {
-        status: "error",
-        error: result.reason instanceof Error ? result.reason.message : "Unknown error",
-      };
-    }
-  }
+    }),
+  );
 
   return NextResponse.json({
     success: true,
-    results,
+    results: ctx.results,
     totalInserted,
-    unmapped,
+    unmapped: ctx.unmapped,
     duration: `${((Date.now() - startTime) / 1000).toFixed(1)}s`,
   });
 }
