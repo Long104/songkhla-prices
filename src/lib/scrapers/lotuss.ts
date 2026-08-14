@@ -123,7 +123,7 @@ export const lotussScraper: Scraper = {
         // Find all ฿-prefixed prices in the body text
         const pricePattern = /฿([0-9,]+(?:\.[0-9]{2})?)/g;
         let match: RegExpExecArray | null;
-        const candidates: number[] = [];
+        const candidates: { price: number; precedingText: string }[] = [];
 
         while ((match = pricePattern.exec(bodyText)) !== null) {
           const price = parsePrice(match[1]);
@@ -136,20 +136,21 @@ export const lotussScraper: Scraper = {
           const precedingText = bodyText.slice(windowStart, priceStart);
 
           if (precedingText.includes(trackedName)) {
-            candidates.push(price);
+            candidates.push({ price, precedingText });
           }
         }
 
         if (candidates.length === 0) continue;
 
         // Keep the cheapest matching price (likely the base variant)
-        const cheapest = Math.min(...candidates);
+        const cheapestCandidate = candidates.reduce((a, b) => (a.price < b.price ? a : b));
         allPrices.push({
           sourceProductName: trackedName, // EXACT canonical name — matches product_source_mappings
-          price: cheapest,
+          price: cheapestCandidate.price,
           unit: "บาท/ชิ้น",
           provinceCode: null,
           sourceDate: today,
+          productTitle: cheapestCandidate.precedingText,
         });
       } catch (error) {
         console.error(`[Lotus's] Error scraping "${trackedName}":`, error);

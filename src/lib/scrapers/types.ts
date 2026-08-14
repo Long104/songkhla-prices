@@ -4,6 +4,8 @@ export interface ScrapedPrice {
   unit: string;
   provinceCode: string | null;
   sourceDate: Date;
+  /** Raw product title or context text — used for weight extraction at ingest */
+  productTitle?: string;
 }
 
 export interface Scraper {
