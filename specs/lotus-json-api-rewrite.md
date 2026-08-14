@@ -205,7 +205,7 @@ Keep Browserless path but: chunked concurrency 4 (hand-rolled), `timeout: 15_000
 | Product price outside 5–2000 | filtered out before cheapest-match |
 | Page 1 full, page 2 request fails | keep page-1 results (partial > none) |
 | Scraper hangs > 240s in cron | marked error; other scrapers already written; response still returns |
-| Cron re-run same day | `onConflictDoNothing` — zero duplicates (existing unique index) |
+| Cron re-run same day | ⚠️ CORRECTED post-verification: `onConflictDoNothing` does NOT dedupe when `province_id` IS NULL (Postgres unique index NULLS-are-distinct semantics) — re-runs insert duplicate rows. Display is unaffected (`SELECT DISTINCT ON (source_id)` latest-wins in product page); data bloat only. **Follow-up for Entrepreneur**: consider `NULLS NOT DISTINCT` index migration |
 | DB unavailable (`getDb()` null) | that scraper marked error; others unaffected |
 | 88 tracked terms | chunked ×5 concurrency; all terms attempted; runtime < 5 min |
 
