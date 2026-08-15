@@ -7,7 +7,7 @@ import {
   pgTable,
   serial,
   timestamp,
-  uniqueIndex,
+  unique,
   varchar,
 } from "drizzle-orm/pg-core";
 
@@ -97,12 +97,9 @@ export const prices = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("prices_product_source_province_date_idx").on(
-      table.productId,
-      table.sourceId,
-      table.provinceId,
-      table.sourceDate,
-    ),
+    unique("prices_product_source_province_date_unit_idx")
+      .on(table.productId, table.sourceId, table.provinceId, table.sourceDate, table.unit)
+      .nullsNotDistinct(),
     // Speed up "prices for product X" lookups on the product detail page.
     index("prices_product_id_idx").on(table.productId),
   ],

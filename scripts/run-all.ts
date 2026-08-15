@@ -1,9 +1,10 @@
+import { lotussScraper } from "@/lib/scrapers/lotuss";
 import { makroScraper } from "@/lib/scrapers/makro";
 import { simummuangScraper } from "@/lib/scrapers/simummuang";
 import { writeScraperResults, type ScrapeContext } from "@/lib/scrapers/db-writer";
 
 async function main() {
-  const scrapers = [makroScraper, simummuangScraper];
+  const scrapers = [lotussScraper, makroScraper, simummuangScraper];
   for (const scraper of scrapers) {
     console.log(`Running scraper: ${scraper.sourceSlug}...`);
     const results = await scraper.scrape();

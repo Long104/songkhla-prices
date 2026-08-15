@@ -50,7 +50,7 @@ export default async function ProductPage({
         const productRow = rows[0];
         product = productRow;
         const result = await db.execute(sql`
-          SELECT DISTINCT ON (prices.source_id)
+          SELECT DISTINCT ON (prices.source_id, prices.unit)
             sources.slug as "sourceSlug",
             sources.name_th as "sourceNameTh",
             sources.name_en as "sourceNameEn",
@@ -66,7 +66,7 @@ export default async function ProductPage({
           INNER JOIN sources ON prices.source_id = sources.id
           WHERE prices.product_id = ${productRow.id}
             AND (${provinceId !== null ? sql`prices.province_id = ${provinceId} OR prices.province_id IS NULL` : sql`prices.province_id IS NULL`})
-          ORDER BY prices.source_id, prices.source_date DESC, prices.scraped_at DESC
+          ORDER BY prices.source_id, prices.unit, prices.source_date DESC, prices.scraped_at DESC
         `);
 
         const rawPrices = (Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? []) as Array<{

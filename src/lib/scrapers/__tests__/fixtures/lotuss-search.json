@@ -1,0 +1,96 @@
+{
+  "data": {
+    "products": [
+      {
+        "id": 22391,
+        "deliveryMethod": [
+          "HD",
+          "HDND",
+          "CCND"
+        ],
+        "deliveryType": [
+          "OD",
+          "SFL"
+        ],
+        "finalPricePerUOW": 129,
+        "regularPricePerUOW": 139,
+        "loyaltyMemberPricePerUOW": 0,
+        "isInstallmentSupport": false,
+        "maxQuantityOfProduct": 9999,
+        "minQuantityOfProduct": 1,
+        "name": "ซีพี หมูบดปนมัน 30% กก.ละ",
+        "priceRange": {
+          "minimumPrice": {
+            "discount": {
+              "amountOff": 10,
+              "displayNumber": 7,
+              "displayText": "Special discounted price",
+              "percentOff": 7.19
+            },
+            "finalPrice": {
+              "currency": "THB",
+              "currencyPrefix": "฿",
+              "value": 25.8
+            },
+            "finalPricePerUOW": {
+              "value": 129,
+              "currency": "THB",
+              "currencyPrefix": "฿"
+            },
+            "loyaltyMemberPrice": {
+              "currency": "THB",
+              "currencyPrefix": "฿",
+              "value": 0
+            },
+            "regularPrice": {
+              "currency": "THB",
+              "currencyPrefix": "฿",
+              "value": 27.8
+            }
+          }
+        },
+        "promotions": [],
+        "sellingType": "weight",
+        "sku": "51268475",
+        "thumbnail": { "url": "https://o2o-static.lotuss.com/products/107486/51268475.jpg" },
+        "unitOfQuantity": "กก.",
+        "unitOfWeight": "กก.",
+        "urlKey": "tesco-size-s-jazz-apples-6-pcs-1-pack-51268475",
+        "weight": 0.2,
+        "weightPerPiece": 0.2,
+        "stockStatus": "IN_STOCK"
+      },
+      {
+        "id": 71162,
+        "deliveryMethod": [ "HD", "HDND", "CCND" ],
+        "deliveryType": [ "OD", "SFL" ],
+        "finalPricePerUOW": 39,
+        "regularPricePerUOW": 39,
+        "loyaltyMemberPricePerUOW": 0,
+        "isInstallmentSupport": false,
+        "maxQuantityOfProduct": 9999,
+        "minQuantityOfProduct": 1,
+        "name": "โลตัส หมูบด 250 กรัม",
+        "priceRange": {
+          "minimumPrice": {
+            "discount": { "amountOff": 0, "percentOff": 0 },
+            "finalPrice": { "currency": "THB", "currencyPrefix": "฿", "value": 39 },
+            "loyaltyMemberPrice": { "currency": "THB", "currencyPrefix": "฿", "value": 0 },
+            "regularPrice": { "currency": "THB", "currencyPrefix": "฿", "value": 39 }
+          }
+        },
+        "promotions": [],
+        "sellingType": "qty",
+        "sku": "74439049",
+        "thumbnail": { "url": "https://o2o-static.lotuss.com/products/107486/74439049.jpg" },
+        "unitOfQuantity": "ชิ้น",
+        "unitOfWeight": "ชิ้น",
+        "urlKey": "tesco-minced-pork-300g-74439049",
+        "weight": 0.25,
+        "weightPerPiece": 0.25,
+        "stockStatus": "IN_STOCK"
+      }
+    ],
+    "hasMore": false
+  }
+}

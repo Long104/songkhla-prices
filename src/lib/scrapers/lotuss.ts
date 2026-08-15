@@ -87,18 +87,22 @@ interface LotusPriceValue {
 
 interface LotusMinimumPrice {
   finalPrice: LotusPriceValue;
+  finalPricePerUOW?: LotusPriceValue; // per unit-of-weight (per kg) price
 }
 
 export interface LotusApiProduct {
   id: number;
   name: string;
   sku: string;
+  sellingType?: string;   // weight-kind items carry this (e.g. "weight")
+  uow?: string;           // unit of weight, e.g. "KG" (if present)
+  finalPricePerUOW?: number; // per unit-of-weight (per kg) price, top-level field
   priceRange: {
     minimumPrice: LotusMinimumPrice;
   };
 }
 
-interface LotusSearchResponse {
+export interface LotusSearchResponse {
   data: {
     products: LotusApiProduct[];
     hasMore: boolean;
@@ -193,7 +197,6 @@ export function filterLotusCandidates(
     sourceSlug: "lotuss",
     async scrape(): Promise<ScrapedPrice[]> {
       const allPrices: ScrapedPrice[] = [];
-      const today = new Date();
       const entries = Object.entries(LOTUS_TRACKED_PRODUCTS);
 
       for (let i = 0; i < entries.length; i += SEARCH_CONCURRENCY) {
@@ -202,53 +205,80 @@ export function filterLotusCandidates(
           chunk.map(async ([trackedName, term]) => {
             try {
               const products = await searchTerm(term);
-              const candidates = filterLotusCandidates(products, trackedName)
-                .map((p) => ({ product: p, price: p.priceRange.minimumPrice.finalPrice.value }))
-                .filter((c) => c.price >= MIN_PRICE && c.price <= MAX_PRICE);
-
-              if (candidates.length === 0) return null;
-
-              // Add sanity check for per-kg prices (should be above 60-70 THB/kg for meat)
-              const sanityFiltered = candidates.filter(c => {
-                const unit = detectUnitFromTitle(c.product.name);
-                if (unit === "บาท/กก." || unit === "บาท/ลิตร") {
-                  return c.price >= 60; // Reasonable lower bound for per-unit weight prices
-                }
-                return true;
-              });
-
-              const validCandidates = sanityFiltered.length > 0 ? sanityFiltered : candidates;
-
-              const cheapest = validCandidates.reduce((a, b) => (a.price < b.price ? a : b));
-              return {
-                sourceProductName: trackedName,
-                price: cheapest.price,
-                productTitle: cheapest.product.name,
-                unit: detectUnitFromTitle(cheapest.product.name) || "บาท/ชิ้น",
-              };
+              const candidates = filterLotusCandidates(products, trackedName);
+              if (candidates.length === 0) return [];
+              return pickPerFamily(candidates, trackedName);
             } catch (error) {
               console.error(`[Lotus's] Error scraping "${trackedName}":`, error);
-              return null;
+              return [];
             }
           }),
         );
 
         for (const result of chunkResults) {
-          if (result === null) continue;
-          allPrices.push({
-            sourceProductName: result.sourceProductName,
-            price: result.price,
-            unit: result.unit || "บาท/ชิ้น",
-            provinceCode: null,
-            sourceDate: today,
-            productTitle: result.productTitle,
-          });
+          allPrices.push(...result);
         }
       }
 
       return allPrices;
     },
   };
+
+  function pickPerFamily(
+    candidates: LotusApiProduct[],
+    trackedName: string,
+  ): ScrapedPrice[] {
+    const results: ScrapedPrice[] = [];
+    const today = new Date();
+
+    const mapped = candidates.map((p) => ({
+      product: p,
+      perUow: p.finalPricePerUOW ?? p.priceRange.minimumPrice.finalPricePerUOW?.value ?? null,
+      finalPrice: p.priceRange.minimumPrice.finalPrice.value,
+    }));
+
+    const weightCands = mapped.filter(
+      (c) => c.product.sellingType === "weight" && c.perUow !== null && c.perUow >= 60 && c.perUow <= MAX_PRICE,
+    );
+    const packCands = mapped.filter(
+      (c) =>
+        (c.product.sellingType !== "weight" || c.perUow === null) &&
+        c.finalPrice >= MIN_PRICE &&
+        c.finalPrice <= MAX_PRICE,
+    );
+
+    // Emit cheapest weight candidate (per-kg price), if any
+    if (weightCands.length > 0) {
+      const cheapest = weightCands.reduce((a, b) => (a.perUow! < b.perUow! ? a : b));
+      const unit =
+        cheapest.product.uow === "L" || detectUnitFromTitle(cheapest.product.name) === "บาท/ลิตร"
+          ? "บาท/ลิตร"
+          : "บาท/กก.";
+      results.push({
+        sourceProductName: trackedName,
+        price: cheapest.perUow!,
+        unit,
+        provinceCode: null,
+        sourceDate: today,
+        productTitle: cheapest.product.name,
+      });
+    }
+
+    // Emit cheapest pack candidate (tray/pack price), if any
+    if (packCands.length > 0) {
+      const cheapest = packCands.reduce((a, b) => (a.finalPrice < b.finalPrice ? a : b));
+      results.push({
+        sourceProductName: trackedName,
+        price: cheapest.finalPrice,
+        unit: detectUnitFromTitle(cheapest.product.name) === "บาท/ลิตร" ? "บาท/ลิตร" : "บาท/ชิ้น",
+        provinceCode: null,
+        sourceDate: today,
+        productTitle: cheapest.product.name,
+      });
+    }
+
+    return results;
+  }
 
   function detectUnitFromTitle(title: string): string | null {
     // Detect per-kg units from title patterns
