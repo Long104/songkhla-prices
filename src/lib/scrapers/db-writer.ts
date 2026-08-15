@@ -73,7 +73,18 @@ export async function writeScraperResults(
           scrapedAt: new Date(),
           sourceDate: toDateOnly(sp.sourceDate),
         })
-        .onConflictDoNothing();
+        .onConflictDoUpdate({
+          target: [prices.productId, prices.sourceId, prices.provinceId, prices.sourceDate, prices.unit],
+          set: {
+            price: sp.price.toString(),
+            unit: sp.unit,
+            normalizedPrice: normalized.normalizedPrice.toString(),
+            normalizedUnit: normalized.normalizedUnit,
+            weightGrams: normalized.weightGrams,
+            scrapedAt: new Date(),
+            sourceDate: toDateOnly(sp.sourceDate),
+          },
+        });
       insertedCount++;
     } catch (err) {
       console.error(`[cron] Failed to upsert price for "${sp.sourceProductName}":`, err);
