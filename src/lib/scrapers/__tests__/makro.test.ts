@@ -175,6 +175,30 @@ describe("makroScraper", () => {
     expect(porkNeck?.price).toBe(89);
   });
 
+  it("matches pork-mince (หมูสับ) via aliases 'หมูบดอนามัย' and 'เนื้อหมูบด', ignoring plain 'หมูบด'", async () => {
+    const hits = [
+      { document: makeDoc("หมูบด 1 กก.", 100) },
+      { document: makeDoc("หมูบดอนามัย 1 กก.", 120) },
+      { document: makeDoc("เนื้อหมูบด 1 กก.", 110) },
+    ];
+    vi.mocked(types.fetchJson).mockImplementation(async (url: string) => {
+      if (typeof url === "string" && url.includes("meat/pork")) {
+        return mockCategoryResponse(hits, 1, 3);
+      }
+      return mockCategoryResponse([], 1, 0);
+    });
+
+    const results = await runScrape();
+    const porkMince = results.find((r) => r.sourceProductName === "หมูสับ");
+    expect(porkMince).toBeDefined();
+    // Cheapest valid candidate between 120 and 110 is 110
+    expect(porkMince?.price).toBe(110);
+
+    const porkGround = results.find((r) => r.sourceProductName === "หมูบด");
+    expect(porkGround).toBeDefined();
+    expect(porkGround?.price).toBe(100);
+  });
+
   it("stops after an empty Makro page", async () => {
     const page1Hits = [{ document: makeDoc("หมูคอสไลซ์ 1 กก.", 129) }];
     vi.mocked(types.fetchJson).mockImplementation(async (url: string) => {
