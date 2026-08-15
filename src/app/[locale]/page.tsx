@@ -6,7 +6,6 @@ import { MapPin } from "lucide-react";
 import { CategoryCard } from "@/components/category-card";
 import { SearchBar } from "@/components/search-bar";
 import { ProvinceSelector } from "@/components/province-selector";
-import { PriceTypeToggle } from "@/components/price-type-toggle";
 import { PriceChangesList } from "@/components/price-changes-list";
 import { EmptyState } from "@/components/empty-state";
 import { getDb } from "@/db";
