@@ -431,6 +431,7 @@ const lotussMappings: MappingSeed[] = [
   { sourceSlug: "lotuss", productSlug: "pork-neck", sourceProductName: "หมูคอสไลซ์" },
   { sourceSlug: "lotuss", productSlug: "pork-ground", sourceProductName: "หมูบด" },
   { sourceSlug: "lotuss", productSlug: "chicken-ground", sourceProductName: "ไก่บด" },
+  { sourceSlug: "lotuss", productSlug: "chicken-grilled", sourceProductName: "ไก่ย่าง" },
   { sourceSlug: "lotuss", productSlug: "chicken-wings", sourceProductName: "ปีกไก่" },
   { sourceSlug: "lotuss", productSlug: "chicken-breast", sourceProductName: "อกไก่" },
   { sourceSlug: "lotuss", productSlug: "chicken-drumstick", sourceProductName: "น่องไก่" },
