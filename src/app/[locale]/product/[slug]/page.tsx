@@ -9,9 +9,9 @@ import { PriceTable, type PriceRow } from "@/components/price-table";
 import { EmptyState } from "@/components/empty-state";
 import { getDb } from "@/db";
 import { products, categories } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { DEFAULT_PROVINCE_CODE } from "@/lib/provinces";
-import { getProvinceIdByCode } from "@/db/queries";
+import { getProvinceIdByCode, getLatestPricesForProduct } from "@/db/queries";
 import { formatDate } from "@/lib/utils";
 
 export default async function ProductPage({
@@ -46,42 +46,10 @@ export default async function ProductPage({
         .where(eq(products.slug, slug))
         .limit(1);
 
-      if (rows.length > 0) {
+        if (rows.length > 0) {
         const productRow = rows[0];
         product = productRow;
-        const result = await db.execute(sql`
-          SELECT DISTINCT ON (prices.source_id, prices.unit)
-            sources.slug as "sourceSlug",
-            sources.name_th as "sourceNameTh",
-            sources.name_en as "sourceNameEn",
-            sources.type as "sourceType",
-            prices.price,
-            prices.unit,
-            prices.normalized_price as "normalizedPrice",
-            prices.normalized_unit as "normalizedUnit",
-            prices.weight_grams as "weightGrams",
-            prices.source_date as "sourceDate",
-            prices.province_id as "provinceId"
-          FROM prices
-          INNER JOIN sources ON prices.source_id = sources.id
-          WHERE prices.product_id = ${productRow.id}
-            AND (${provinceId !== null ? sql`prices.province_id = ${provinceId} OR prices.province_id IS NULL` : sql`prices.province_id IS NULL`})
-          ORDER BY prices.source_id, prices.unit, prices.source_date DESC, prices.scraped_at DESC
-        `);
-
-        const rawPrices = (Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? []) as Array<{
-          sourceSlug: string;
-          sourceNameTh: string;
-          sourceNameEn: string | null;
-          sourceType: string;
-          price: string;
-          unit: string;
-          normalizedPrice: string | null;
-          normalizedUnit: string | null;
-          weightGrams: number | null;
-          sourceDate: string;
-          provinceId: number | null;
-        }>;
+        const rawPrices = await getLatestPricesForProduct(db, productRow.id, provinceId);
 
         priceRows = rawPrices.map((r) => ({
           productName: productRow.nameTh,

@@ -29,6 +29,65 @@ export function provincePriceFilter(provinceId: number | null): SQL | undefined 
   return or(eq(prices.provinceId, provinceId), isNull(prices.provinceId));
 }
 
+export interface RawPriceRow {
+  sourceId: number;
+  sourceSlug: string;
+  sourceNameTh: string;
+  sourceNameEn: string | null;
+  sourceType: string;
+  price: string;
+  unit: string;
+  normalizedPrice: string | null;
+  normalizedUnit: string | null;
+  weightGrams: number | null;
+  sourceDate: string;
+  provinceId: number | null;
+}
+
+/**
+ * Fetch the latest price per source AND per unit for a single product.
+ *
+ * This is the single source of truth for how the app reads a product's
+ * current prices. It is shared by the product detail page and the category
+ * listing so both surfaces always agree on which price is "latest".
+ *
+ * Uses `DISTINCT ON (source_id, unit)` so a source that reports the same
+ * product in different units (e.g. per-kg and per-pack) keeps both rows.
+ */
+export async function getLatestPricesForProduct(
+  db: Db,
+  productId: number,
+  provinceId: number | null
+): Promise<RawPriceRow[]> {
+  const provinceCondition =
+    provinceId !== null
+      ? sql`prices.province_id = ${provinceId} OR prices.province_id IS NULL`
+      : sql`prices.province_id IS NULL`;
+
+  const result = await db.execute(sql`
+    SELECT DISTINCT ON (prices.source_id, prices.unit)
+      prices.source_id as "sourceId",
+      sources.slug as "sourceSlug",
+      sources.name_th as "sourceNameTh",
+      sources.name_en as "sourceNameEn",
+      sources.type as "sourceType",
+      prices.price,
+      prices.unit,
+      prices.normalized_price as "normalizedPrice",
+      prices.normalized_unit as "normalizedUnit",
+      prices.weight_grams as "weightGrams",
+      prices.source_date as "sourceDate",
+      prices.province_id as "provinceId"
+    FROM prices
+    INNER JOIN sources ON prices.source_id = sources.id
+    WHERE prices.product_id = ${productId}
+      AND (${provinceCondition})
+    ORDER BY prices.source_id, prices.unit, prices.source_date DESC, prices.scraped_at DESC
+  `);
+
+  return (Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? []) as RawPriceRow[];
+}
+
 export interface ProductWithCheapestPrice {
   id: number;
   slug: string;
@@ -59,31 +118,7 @@ export async function getProductsWithCheapestPrice(
   return Promise.all(
     productRows.map(async (p) => {
       try {
-        const result = await db.execute(sql`
-          SELECT DISTINCT ON (prices.source_id)
-            prices.price,
-            prices.unit,
-            prices.normalized_price as "normalizedPrice",
-            prices.normalized_unit as "normalizedUnit",
-            prices.weight_grams as "weightGrams",
-            prices.source_id as "sourceId",
-            sources.name_th as "sourceNameTh",
-            sources.name_en as "sourceNameEn"
-          FROM prices
-          INNER JOIN sources ON prices.source_id = sources.id
-          WHERE prices.product_id = ${p.id}
-          ORDER BY prices.source_id, prices.source_date DESC, prices.scraped_at DESC
-        `);
-        const priceRows = result.rows as unknown as Array<{
-          price: string;
-          unit: string;
-          normalizedPrice: string | null;
-          normalizedUnit: string | null;
-          weightGrams: number | null;
-          sourceId: number;
-          sourceNameTh: string;
-          sourceNameEn: string | null;
-        }>;
+        const priceRows = await getLatestPricesForProduct(db, p.id, provinceId);
 
         const priceInputRows = priceRows.map((r) => ({
           price: r.normalizedPrice ? Number(r.normalizedPrice) : Number(r.price),
@@ -94,28 +129,15 @@ export async function getProductsWithCheapestPrice(
 
         const { primarySummary, secondarySummary } = summarizePriceFamilies(priceInputRows);
 
-        let cheapestPrice: number | null = null;
-        let cheapestUnit: string | null = null;
-        let cheapestSourceNameTh: string | null = null;
-        let cheapestSourceNameEn: string | null = null;
-        let maxPrice: number | null = null;
-        let maxUnit: string | null = null;
-
-        for (const r of priceRows) {
-          const normPrice = r.normalizedPrice ? Number(r.normalizedPrice) : Number(r.price);
-          const normUnit = r.normalizedUnit ?? r.unit;
-          
-          if (cheapestPrice === null || normPrice < cheapestPrice) {
-            cheapestPrice = normPrice;
-            cheapestUnit = normUnit;
-            cheapestSourceNameTh = r.sourceNameTh;
-            cheapestSourceNameEn = r.sourceNameEn;
-          }
-          if (maxPrice === null || normPrice > maxPrice) {
-            maxPrice = normPrice;
-            maxUnit = normUnit;
-          }
-        }
+        // Cheapest price is derived ONLY from the primary unit family (weight >
+        // volume > pack > count), so a per-pack price is never compared against a
+        // per-kg price. This prevents the price-vs-unit mismatch.
+        const cheapestPrice = primarySummary?.minPrice ?? null;
+        const cheapestUnit = primarySummary ? `บาท/${primarySummary.unitLabel}` : null;
+        const cheapestSourceNameTh = primarySummary?.cheapestSourceNameTh ?? null;
+        const cheapestSourceNameEn = primarySummary?.cheapestSourceNameEn ?? null;
+        const maxPrice = primarySummary?.maxPrice ?? null;
+        const maxUnit = primarySummary ? `บาท/${primarySummary.unitLabel}` : null;
 
         return {
           ...p,
