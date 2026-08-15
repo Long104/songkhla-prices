@@ -22,6 +22,16 @@ export function getDb(): Db | null {
   if (!url) {
     return null;
   }
+
+  // Safety guard: in tests, require a test database to avoid wiping dev DB
+  const isTestEnv = process.env.NODE_ENV === "test";
+  if (isTestEnv && !url.includes("test")) {
+    throw new Error(
+      "Test environment detected but DATABASE_URL does not target a test database.\n" +
+      "Please set DATABASE_URL to use a dedicated test database (e.g., ..._test)."
+    );
+  }
+
   if (url.includes("localhost") || url.includes("127.0.0.1")) {
     const pool = new Pool({ connectionString: url });
     return nodeDrizzle({ client: pool, schema });
