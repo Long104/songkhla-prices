@@ -199,16 +199,33 @@ const nfc = (s: string): string => s.normalize("NFC").replace(/\u0E4D\u0E32/g, "
  * pass `nfc(...)`), so no extra normalization happens here.
  */
 function matchesName(title: string, trackedName: string): boolean {
+  // Phase 1: Strict match (if title contains the name, it's a candidate)
+  const strictMatch = title.includes(trackedName);
+
+  // Phase 2: Alias-based matching for specific products
   if (trackedName === "หมูคอสไลซ์") {
     // Must contain a neck-related keyword. "คอหมู" is a contiguous substring
     // (reversed Thai word order, e.g. "คอหมูสําเร็จย่าง 1 กก."); "คอไก่" must
     // NOT match because it lacks the หมู prefix.
     if (title.includes("สันคอ") || title.includes("หมูคอ") || title.includes("คอหมู")) return true;
+    // If we found a strict match but no neck keyword, reject (prevent generic "หมูสไลซ์")
+    if (strictMatch) return false;
     return false;
   }
-  if (!title.includes(trackedName)) return false;
-  if (trackedName === "น้ำปลา" && title.includes("ปลาร้า")) return false;
-  return true;
+
+  if (trackedName === "หมูสับ") {
+    if (title.includes("หมูบดอนามัย") || title.includes("เนื้อหมูบด")) return true;
+    // If we found a strict match but not an alias, reject (prevent "หมูบด" mapping)
+    if (strictMatch) return false;
+  }
+
+  // Fallback to strict match result
+  if (strictMatch) {
+    if (trackedName === "น้ำปลา" && title.includes("ปลาร้า")) return false;
+    return true;
+  }
+
+  return false;
 }
 
 /* ---------- Step 5: Price normalization ---------- */

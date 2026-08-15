@@ -33,6 +33,7 @@ interface SmmResponse {
 }
 
 const PRODUCT_MATCH_MAP: Record<string, string[]> = {
+  // Existing veg/fruit
   "ผักคะน้า": ["คะน้า"],
   "ผักบุ้ง": ["ผักบุ้ง"],
   "ถั่วฝักยาว": ["ถั่วฝักยาว"],
@@ -44,6 +45,12 @@ const PRODUCT_MATCH_MAP: Record<string, string[]> = {
   "มะม่วง": ["มะม่วง"],
   "กล้วยน้ำว้า": ["กล้วย"],
   "แตงโม": ["แตงโม"],
+  // Additions (found in API and mapped to seed products)
+  "ไข่ไก่": ["ไข่ไก่"],
+  "ไข่เป็ด": ["ไข่เป็ด"],
+  "กุ้งขาว": ["กุ้งขาว"],
+  "ปูม้า": ["ปูม้า"],
+  "ปลาหมึก": ["หมึกไข่"],
 };
 
 function extractPrice(price: SmmPrice | undefined): number | null {
