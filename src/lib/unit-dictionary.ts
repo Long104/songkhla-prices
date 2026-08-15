@@ -9,20 +9,38 @@ export const UNIT_SYNONYMS: Record<string, string> = {
   "ชิ้น": "แพ็ค",
   "ถาด": "แพ็ค",
   "แพ็ค": "แพ็ค",
+  "ถ้วย": "แพ็ค",
+  "กล่อง": "แพ็ค",
   // Weight synonyms → กก.
   "กก.": "กก.",
   "กิโลกรัม": "กก.",
   "kg": "กก.",
   "kg.": "กก.",
+  "kilo": "กก.",
+  "กรัม": "กรัม",
+  "g": "กรัม",
+  "g.": "กรัม",
+  "ก": "กรัม",
+  "ก.": "กรัม",
+  "ขีด": "ขีด",
   // Volume synonyms → ลิตร
   "ลิตร": "ลิตร",
   "ล.": "ลิตร",
+  "l": "ลิตร",
+  "l.": "ลิตร",
+  "มล.": "มล.",
+  "ml": "มล.",
+  "ml.": "มล.",
+  "cc": "มล.",
   // Count units (already canonical)
   "ฟอง": "ฟอง",
   "ขวด": "ขวด",
   "ซอง": "ซอง",
   "ถุง": "ถุง",
   "ตัว": "ตัว",
+  "มัด": "มัด",
+  "ลูก": "ลูก",
+  "กระป๋อง": "กระป๋อง",
   // Special fixed-weight
   "ถัง 15 กก.": "ถัง 15 กก.",
 };
@@ -32,13 +50,19 @@ export type UnitCategory = "weight" | "volume" | "count";
 /** Canonical unit → measurement category */
 export const UNIT_CATEGORY: Record<string, UnitCategory> = {
   "กก.": "weight",
+  "กรัม": "weight",
+  "ขีด": "weight",
   "ลิตร": "volume",
+  "มล.": "volume",
   "แพ็ค": "count",
   "ถุง": "count",
   "ฟอง": "count",
   "ขวด": "count",
   "ซอง": "count",
   "ตัว": "count",
+  "มัด": "count",
+  "ลูก": "count",
+  "กระป๋อง": "count",
   "ถัง 15 กก.": "weight",
 };
 

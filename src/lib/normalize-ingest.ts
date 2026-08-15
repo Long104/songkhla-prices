@@ -5,9 +5,9 @@ import { buildDisplayUnit, UNIT_CATEGORY, parseUnitWord } from "./unit-dictionar
  * Matches: "150 กรัม", "1.5 กก.", "500 g", "1000 มล.", "1 ลิตร"
  */
 const WEIGHT_PATTERNS = [
-  { regex: /(\d+(?:\.\d+)?)\s*(?:กก\.?|กิโลกรัม|kg\.?)/i, multiplier: 1000 },
-  { regex: /(\d+(?:\.\d+)?)\s*(?:กรัม|g|g\.|ก\.(?![ก/]))/i, multiplier: 1 },
-  { regex: /(\d+(?:\.\d+)?)\s*(?:มล\.|ml\.?)/i, multiplier: 1 },
+  { regex: /(\d+(?:\.\d+)?)\s*(?:กก\.?|กิโลกรัม|kg\.?|kilo)/i, multiplier: 1000 },
+  { regex: /(\d+(?:\.\d+)?)\s*(?:กรัม|g|g\.|ก\.?)/i, multiplier: 1 },
+  { regex: /(\d+(?:\.\d+)?)\s*(?:มล\.?|ml\.?|cc)/i, multiplier: 1 },
   { regex: /(\d+(?:\.\d+)?)\s*(?:ลิตร|[ลl]\.?(?!\d))/i, multiplier: 1000 },
 ];
 
@@ -51,7 +51,6 @@ export function normalizeAtIngest(
   productNameOrContext: string,
 ): NormalizedPriceResult {
   const canonicalUnit = buildDisplayUnit(rawUnit);
-  const unitWord = parseUnitWord(rawUnit);
   const category = UNIT_CATEGORY[parseUnitWord(canonicalUnit)];
   const weightGrams = extractWeightGrams(productNameOrContext);
 

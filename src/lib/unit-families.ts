@@ -16,6 +16,7 @@ export const CANONICAL_TO_FAMILY: Record<string, UnitFamily> = {
   "ถัง 15 กก.": "weight",
   // Volume
   "ลิตร": "volume",
+  "มล.": "volume",
   "ml": "volume",
   "cc": "volume",
   // Pack
@@ -30,6 +31,7 @@ export const CANONICAL_TO_FAMILY: Record<string, UnitFamily> = {
   "ตัว": "count",
   "มัด": "count",
   "ลูก": "count",
+  "กระป๋อง": "count",
 };
 
 /**
