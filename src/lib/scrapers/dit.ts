@@ -149,20 +149,24 @@ export const ditScraper: Scraper = {
       const results: ScrapedPrice[] = [];
 
       for (const [group, codes] of Object.entries(DIT_PRODUCTS)) {
-        const params = new URLSearchParams();
-        params.set("day1", thaiDate(from));
-        params.set("day2", thaiDate(today));
-        params.set("protype", "1"); // ขายปลีก (retail)
-        params.set("progroup", group);
-        params.set("seltime", "multi");
-        for (const code of codes) params.append("proname[]", code);
+        try {
+          const params = new URLSearchParams();
+          params.set("day1", thaiDate(from));
+          params.set("day2", thaiDate(today));
+          params.set("protype", "1"); // ขายปลีก (retail)
+          params.set("progroup", group);
+          params.set("seltime", "multi");
+          for (const code of codes) params.append("proname[]", code);
 
-        const html = await fetchHtml(`${DIT_BASE}/main_price.php?seltime=multi`, {
-          method: "POST",
-          body: params,
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        });
-        results.push(...parsePriceTable(html));
+          const html = await fetchHtml(`${DIT_BASE}/main_price.php?seltime=multi`, {
+            method: "POST",
+            body: params,
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          });
+          results.push(...parsePriceTable(html));
+        } catch (groupErr) {
+          console.error(`[DIT scraper] Error fetching group ${group}:`, groupErr);
+        }
       }
 
       return results;

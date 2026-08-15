@@ -104,34 +104,38 @@ export const simummuangScraper: Scraper = {
     const scrapedPrices: ScrapedPrice[] = [];
 
     for (const [canonicalName, searchTerms] of Object.entries(PRODUCT_MATCH_MAP)) {
-      const matches = allProducts.filter((p) => {
-        const name = p.th?.name || "";
-        return searchTerms.some((term) => name.includes(term));
-      });
+      try {
+        const matches = allProducts.filter((p) => {
+          const name = p.th?.name || "";
+          return searchTerms.some((term) => name.includes(term));
+        });
 
-      let bestPrice: number | null = null;
-      for (const p of matches) {
-        const price = extractPrice(p.price);
-        if (price !== null) {
-          if (bestPrice === null || price < bestPrice) {
-            bestPrice = price;
+        let bestPrice: number | null = null;
+        for (const p of matches) {
+          const price = extractPrice(p.price);
+          if (price !== null) {
+            if (bestPrice === null || price < bestPrice) {
+              bestPrice = price;
+            }
           }
         }
-      }
 
-      if (bestPrice !== null) {
-        const unitName = allProducts.find((p) => {
-          const name = p.th?.name || "";
-          return searchTerms.some((term) => name.includes(term)) && extractPrice(p.price) === bestPrice;
-        })?.prod_unit_id?.th?.name || "กิโลกรัม";
+        if (bestPrice !== null) {
+          const unitName = allProducts.find((p) => {
+            const name = p.th?.name || "";
+            return searchTerms.some((term) => name.includes(term)) && extractPrice(p.price) === bestPrice;
+          })?.prod_unit_id?.th?.name || "กิโลกรัม";
 
-        scrapedPrices.push({
-          sourceProductName: canonicalName,
-          price: bestPrice,
-          unit: unitName === "กิโลกรัม" ? "บาท/กก." : `บาท/${unitName}`,
-          provinceCode: null,
-          sourceDate: new Date(),
-        });
+          scrapedPrices.push({
+            sourceProductName: canonicalName,
+            price: bestPrice,
+            unit: unitName === "กิโลกรัม" ? "บาท/กก." : `บาท/${unitName}`,
+            provinceCode: null,
+            sourceDate: new Date(),
+          });
+        }
+      } catch (itemErr) {
+        console.error(`[SimumMuang] Error processing product "${canonicalName}":`, itemErr);
       }
     }
 

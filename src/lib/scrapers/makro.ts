@@ -349,29 +349,33 @@ export const makroScraper: Scraper = {
       // Match tracked products: pick the cheapest matching product (lowest
       // normalized price per kg/unit) as the base wholesale price.
       for (const [trackedName, categorySlugs] of Object.entries(PRODUCT_CATEGORY_MAP)) {
-        const candidates: MakroProductDocument[] = [];
-        for (const slug of categorySlugs) {
-          const products = categoryProducts.get(slug) ?? [];
-          candidates.push(...products.filter((p) => matchesName(nfc(p.title), nfc(trackedName))));
+        try {
+          const candidates: MakroProductDocument[] = [];
+          for (const slug of categorySlugs) {
+            const products = categoryProducts.get(slug) ?? [];
+            candidates.push(...products.filter((p) => matchesName(nfc(p.title), nfc(trackedName))));
+          }
+
+          if (candidates.length === 0) continue;
+
+          const normalized = candidates
+            .map((p) => ({ ...normalizePrice(p, trackedName), product: p }))
+            .filter((n) => n.price > 0);
+
+          if (normalized.length === 0) continue;
+
+          const cheapest = normalized.reduce((a, b) => (b.price < a.price ? b : a));
+
+          results.push({
+            sourceProductName: trackedName,
+            price: cheapest.price,
+            unit: cheapest.unit,
+            provinceCode: null, // national wholesale reference
+            sourceDate: today,
+          });
+        } catch (itemErr) {
+          console.error(`[Makro] Error processing product "${trackedName}":`, itemErr);
         }
-
-        if (candidates.length === 0) continue;
-
-        const normalized = candidates
-          .map((p) => ({ ...normalizePrice(p, trackedName), product: p }))
-          .filter((n) => n.price > 0);
-
-        if (normalized.length === 0) continue;
-
-        const cheapest = normalized.reduce((a, b) => (b.price < a.price ? b : a));
-
-        results.push({
-          sourceProductName: trackedName,
-          price: cheapest.price,
-          unit: cheapest.unit,
-          provinceCode: null, // national wholesale reference
-          sourceDate: today,
-        });
       }
 
       return results;
