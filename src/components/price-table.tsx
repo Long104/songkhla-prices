@@ -22,6 +22,7 @@ export interface PriceRow {
   weightGrams: number | null;
   sourceDate: string;
   isNational: boolean;
+  changePct?: number | null;
 }
 
 interface PriceTableProps {
@@ -204,11 +205,26 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
               <div className="mt-2 text-right md:mt-0">
                 <p
                   className={cn(
-                    "shrink-0 text-base font-bold",
+                    "shrink-0 text-base font-bold flex items-center gap-1 justify-end",
                     isCheapest ? "text-green-700" : "text-zinc-800"
                   )}
                 >
                   {row.displayPriceText}
+                  {row.changePct !== undefined && row.changePct !== null && (
+                    <span
+                      className={cn(
+                        "text-xs font-semibold",
+                        row.changePct > 0 ? "text-red-600" : "text-green-600"
+                      )}
+                      aria-label={
+                        row.changePct > 0
+                          ? t("priceUp", { pct: Math.abs(row.changePct).toFixed(1) })
+                          : t("priceDown", { pct: Math.abs(row.changePct).toFixed(1) })
+                      }
+                    >
+                      {row.changePct > 0 ? `▲ +${row.changePct.toFixed(1)}%` : `▼ ${Math.abs(row.changePct).toFixed(1)}%`}
+                    </span>
+                  )}
                 </p>
 
                 {row.perKgEquivalent !== null && (

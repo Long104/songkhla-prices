@@ -9,7 +9,7 @@ import { products } from "@/db/schema";
 import { ilike, or } from "drizzle-orm";
 import { Suspense } from "react";
 import { DEFAULT_PROVINCE_CODE } from "@/lib/provinces";
-import { getProvinceIdByCode, getProductsWithCheapestPrice, type ProductWithCheapestPrice } from "@/db/queries";
+import { getProvinceIdByCodeCached, getProductsWithCheapestPriceCached, type ProductWithCheapestPrice } from "@/db/cached-queries";
 
 export default async function SearchPage({
   params,
@@ -30,12 +30,16 @@ export default async function SearchPage({
     try {
       const db = getDb();
       if (db) {
-        const provinceId = await getProvinceIdByCode(db, provinceCode);
-        const matched = await db
-          .select({ id: products.id, slug: products.slug, nameTh: products.nameTh, nameEn: products.nameEn })
-          .from(products)
-          .where(or(ilike(products.nameTh, `%${q}%`), ilike(products.nameEn, `%${q}%`)));
-        results = await getProductsWithCheapestPrice(db, matched, provinceId);
+        const safeQ = q.trim().replace(/[%_\\]/g, (m) => `\\${m}`);
+        const [provinceId, matched] = await Promise.all([
+          getProvinceIdByCodeCached(provinceCode),
+          db
+            .select({ id: products.id, slug: products.slug, nameTh: products.nameTh, nameEn: products.nameEn })
+            .from(products)
+            .where(or(ilike(products.nameTh, `%${safeQ}%`), ilike(products.nameEn, `%${safeQ}%`)))
+            .limit(50),
+        ]);
+        results = await getProductsWithCheapestPriceCached(matched, provinceId);
       }
     } catch {
       // DB not available
@@ -80,6 +84,7 @@ function SearchContent({ locale, results, query }: { locale: string; results: Pr
               secondarySummary={p.secondarySummary}
               cheapestSourceNameTh={p.cheapestSourceNameTh}
               cheapestSourceNameEn={p.cheapestSourceNameEn}
+              cheapestSourceDate={p.cheapestSourceDate}
               sourceCount={p.sourceCount}
               locale={locale}
             />

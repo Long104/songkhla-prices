@@ -28,7 +28,8 @@
     "noResultsFriendlyHint": "ลองค้นหาด้วยชื่ออื่น เช่น \"หมู\" \"ไข่\" หรือ \"ข้าว\"",
     "searchPromptTitle": "ค้นหาสินค้าที่ต้องการ",
     "searchPromptHint": "พิมพ์ชื่อสินค้า เช่น หมูสามชั้น ไข่ไก่ ข้าวหอมมะลิ",
-    "updatedOn": "อัพเดทเมื่อ {date}"
+    "updatedOn": "อัพเดทเมื่อ {date}",
+    "updatedShort": "อัปเดต {date}"
   },
   "categories": {
     "pork": "หมู",
@@ -85,7 +86,9 @@
     "approxPerKg": "≈ ฿{price}/กก.",
     "weightSpecification": "{grams} กรัม",
     "unitMultiInfo": "สินค้านี้มีหลายหน่วย เลือกสลับดูราคาตามหน่วยด้านบน",
-    "cheapestInFamily": "ถูกที่สุดในกลุ่มนี้"
+    "cheapestInFamily": "ถูกที่สุดในกลุ่มนี้",
+    "priceUp": "ราคาขึ้น {pct}%",
+    "priceDown": "ราคาลง {pct}%"
   },
   "search": {
     "title": "ค้นหาสินค้า",

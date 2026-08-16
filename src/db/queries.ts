@@ -54,6 +54,10 @@ export interface RawPriceRow {
  * Uses `DISTINCT ON (source_id, unit)` so a source that reports the same
  * product in different units (e.g. per-kg and per-pack) keeps both rows.
  */
+export interface RawPriceRowWithProduct extends RawPriceRow {
+  productId: number;
+}
+
 export async function getLatestPricesForProduct(
   db: Db,
   productId: number,
@@ -88,6 +92,45 @@ export async function getLatestPricesForProduct(
   return (Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? []) as RawPriceRow[];
 }
 
+export async function getLatestPricesForProducts(
+  db: Db,
+  productIds: number[],
+  provinceId: number | null
+): Promise<RawPriceRowWithProduct[]> {
+  if (productIds.length === 0) return [];
+  
+  const provinceCondition =
+    provinceId !== null
+      ? sql`prices.province_id = ${provinceId} OR prices.province_id IS NULL`
+      : sql`prices.province_id IS NULL`;
+  
+  const idsParam = sql.join(productIds.map(id => sql`${id}`), sql`, `);
+
+  const result = await db.execute(sql`
+    SELECT DISTINCT ON (prices.product_id, prices.source_id, prices.unit)
+      prices.product_id as "productId",
+      prices.source_id as "sourceId",
+      sources.slug as "sourceSlug",
+      sources.name_th as "sourceNameTh",
+      sources.name_en as "sourceNameEn",
+      sources.type as "sourceType",
+      prices.price,
+      prices.unit,
+      prices.normalized_price as "normalizedPrice",
+      prices.normalized_unit as "normalizedUnit",
+      prices.weight_grams as "weightGrams",
+      prices.source_date as "sourceDate",
+      prices.province_id as "provinceId"
+    FROM prices
+    INNER JOIN sources ON prices.source_id = sources.id
+    WHERE prices.product_id IN (${idsParam})
+      AND (${provinceCondition})
+    ORDER BY prices.product_id, prices.source_id, prices.unit, prices.source_date DESC, prices.scraped_at DESC
+  `);
+
+  return (Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? []) as RawPriceRowWithProduct[];
+}
+
 export interface ProductWithCheapestPrice {
   id: number;
   slug: string;
@@ -101,7 +144,111 @@ export interface ProductWithCheapestPrice {
   maxUnit: string | null;
   cheapestSourceNameTh: string | null;
   cheapestSourceNameEn: string | null;
+  cheapestSourceDate: string | null;
   sourceCount: number;
+}
+
+export async function getAllPricesForProduct(
+  db: Db,
+  productId: number,
+  provinceId: number | null
+): Promise<RawPriceRow[]> {
+  const provinceCondition =
+    provinceId !== null
+      ? sql`prices.province_id = ${provinceId} OR prices.province_id IS NULL`
+      : sql`prices.province_id IS NULL`;
+
+  const result = await db.execute(sql`
+    SELECT
+      prices.source_id as "sourceId",
+      sources.slug as "sourceSlug",
+      sources.name_th as "sourceNameTh",
+      sources.name_en as "sourceNameEn",
+      sources.type as "sourceType",
+      prices.price,
+      prices.unit,
+      prices.normalized_price as "normalizedPrice",
+      prices.normalized_unit as "normalizedUnit",
+      prices.weight_grams as "weightGrams",
+      prices.source_date as "sourceDate",
+      prices.province_id as "provinceId"
+    FROM prices
+    INNER JOIN sources ON prices.source_id = sources.id
+    WHERE prices.product_id = ${productId}
+      AND (${provinceCondition})
+    ORDER BY prices.source_id, prices.unit, prices.source_date DESC, prices.scraped_at DESC
+  `);
+
+  return (Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? []) as RawPriceRow[];
+}
+
+/**
+ * In-memory merge of product rows with their batched latest price rows.
+ * Pure function — no DB access. Per-product failures yield a product with
+ * no price data so pages keep rendering.
+ */
+export function mergeProductsWithPrices(
+  productRows: Array<{ id: number; slug: string; nameTh: string; nameEn: string | null }>,
+  allPrices: RawPriceRowWithProduct[]
+): ProductWithCheapestPrice[] {
+  const pricesByProduct = new Map<number, RawPriceRowWithProduct[]>();
+  for (const price of allPrices) {
+    if (!pricesByProduct.has(price.productId)) {
+      pricesByProduct.set(price.productId, []);
+    }
+    pricesByProduct.get(price.productId)!.push(price);
+  }
+
+  return productRows.map((p) => {
+    try {
+      const priceRows = pricesByProduct.get(p.id) ?? [];
+      const priceInputRows = priceRows.map((r) => ({
+        price: r.normalizedPrice ? Number(r.normalizedPrice) : Number(r.price),
+        unit: r.normalizedUnit ?? r.unit,
+        sourceNameTh: r.sourceNameTh,
+        sourceNameEn: r.sourceNameEn,
+        sourceDate: r.sourceDate,
+      }));
+
+      const { primarySummary, secondarySummary } = summarizePriceFamilies(priceInputRows);
+
+      const cheapestPrice = primarySummary?.minPrice ?? null;
+      const cheapestUnit = primarySummary ? `บาท/${primarySummary.unitLabel}` : null;
+      const cheapestSourceNameTh = primarySummary?.cheapestSourceNameTh ?? null;
+      const cheapestSourceNameEn = primarySummary?.cheapestSourceNameEn ?? null;
+      const cheapestSourceDate = primarySummary?.cheapestSourceDate ?? null;
+      const maxPrice = primarySummary?.maxPrice ?? null;
+      const maxUnit = primarySummary ? `บาท/${primarySummary.unitLabel}` : null;
+
+      return {
+        ...p,
+        primarySummary,
+        secondarySummary,
+        cheapestPrice,
+        cheapestUnit,
+        maxPrice,
+        maxUnit,
+        cheapestSourceNameTh,
+        cheapestSourceNameEn,
+        cheapestSourceDate,
+        sourceCount: priceRows.length,
+      };
+    } catch {
+      return {
+        ...p,
+        primarySummary: null,
+        secondarySummary: null,
+        cheapestPrice: null,
+        cheapestUnit: null,
+        maxPrice: null,
+        maxUnit: null,
+        cheapestSourceNameTh: null,
+        cheapestSourceNameEn: null,
+        cheapestSourceDate: null,
+        sourceCount: 0,
+      };
+    }
+  });
 }
 
 /**
@@ -115,58 +262,9 @@ export async function getProductsWithCheapestPrice(
   productRows: Array<{ id: number; slug: string; nameTh: string; nameEn: string | null }>,
   provinceId: number | null
 ): Promise<ProductWithCheapestPrice[]> {
-  return Promise.all(
-    productRows.map(async (p) => {
-      try {
-        const priceRows = await getLatestPricesForProduct(db, p.id, provinceId);
-
-        const priceInputRows = priceRows.map((r) => ({
-          price: r.normalizedPrice ? Number(r.normalizedPrice) : Number(r.price),
-          unit: r.normalizedUnit ?? r.unit,
-          sourceNameTh: r.sourceNameTh,
-          sourceNameEn: r.sourceNameEn,
-        }));
-
-        const { primarySummary, secondarySummary } = summarizePriceFamilies(priceInputRows);
-
-        // Cheapest price is derived ONLY from the primary unit family (weight >
-        // volume > pack > count), so a per-pack price is never compared against a
-        // per-kg price. This prevents the price-vs-unit mismatch.
-        const cheapestPrice = primarySummary?.minPrice ?? null;
-        const cheapestUnit = primarySummary ? `บาท/${primarySummary.unitLabel}` : null;
-        const cheapestSourceNameTh = primarySummary?.cheapestSourceNameTh ?? null;
-        const cheapestSourceNameEn = primarySummary?.cheapestSourceNameEn ?? null;
-        const maxPrice = primarySummary?.maxPrice ?? null;
-        const maxUnit = primarySummary ? `บาท/${primarySummary.unitLabel}` : null;
-
-        return {
-          ...p,
-          primarySummary,
-          secondarySummary,
-          cheapestPrice,
-          cheapestUnit,
-          maxPrice,
-          maxUnit,
-          cheapestSourceNameTh,
-          cheapestSourceNameEn,
-          sourceCount: priceRows.length,
-        };
-      } catch {
-        return {
-          ...p,
-          primarySummary: null,
-          secondarySummary: null,
-          cheapestPrice: null,
-          cheapestUnit: null,
-          maxPrice: null,
-          maxUnit: null,
-          cheapestSourceNameTh: null,
-          cheapestSourceNameEn: null,
-          sourceCount: 0,
-        };
-      }
-    })
-  );
+  const productIds = productRows.map((p) => p.id);
+  const allPrices = await getLatestPricesForProducts(db, productIds, provinceId);
+  return mergeProductsWithPrices(productRows, allPrices);
 }
 
 export interface CategoryProductCount {

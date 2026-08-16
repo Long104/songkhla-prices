@@ -64,6 +64,7 @@ describe("summarizePriceFamilies", () => {
       maxPrice: 95,
       cheapestSourceNameTh: "Lotus's",
       cheapestSourceNameEn: "Lotus's",
+      cheapestSourceDate: null,
     });
     expect(secondarySummary).toEqual({
       family: "pack",
@@ -72,6 +73,7 @@ describe("summarizePriceFamilies", () => {
       maxPrice: 49,
       cheapestSourceNameTh: "ตลาดศรีเมือง",
       cheapestSourceNameEn: "Sri Muang Market",
+      cheapestSourceDate: null,
     });
   });
 
@@ -100,8 +102,26 @@ describe("summarizePriceFamilies", () => {
       maxPrice: null,
       cheapestSourceNameTh: "ตลาดศรีเมือง",
       cheapestSourceNameEn: "Sri Muang Market",
+      cheapestSourceDate: null,
     });
     expect(secondarySummary).toBeNull();
+  });
+
+  it("propagates cheapestSourceDate from the min row", () => {
+    const { primarySummary } = summarizePriceFamilies([
+      { price: 78, unit: "บาท/กก.", sourceNameTh: "Lotus's", sourceNameEn: "Lotus's", sourceDate: "2026-08-14" },
+      { price: 95, unit: "บาท/กก.", sourceNameTh: "Makro", sourceNameEn: "Makro", sourceDate: "2026-08-15" },
+    ]);
+
+    expect(primarySummary?.cheapestSourceDate).toBe("2026-08-14");
+  });
+
+  it("returns null cheapestSourceDate when no rows carry a date", () => {
+    const { primarySummary } = summarizePriceFamilies([
+      { price: 78, unit: "บาท/กก.", sourceNameTh: "Lotus's", sourceNameEn: "Lotus's" },
+    ]);
+
+    expect(primarySummary?.cheapestSourceDate).toBeNull();
   });
 
   it("ignores rows with unknown units", () => {

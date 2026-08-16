@@ -14,7 +14,7 @@ export function CategoryCard({ slug, icon, productCount, locale }: CategoryCardP
   const tc = useTranslations("common");
 
   return (
-    <Link href={`/${locale}/category/${slug}`} className="group">
+    <Link href={`/${locale}/category/${slug}`} aria-label={t(slug)} className="group">
       <Card className="flex h-full flex-col items-center justify-center gap-2 p-4 py-6 transition duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md sm:p-5">
         <span
           aria-hidden
@@ -24,7 +24,7 @@ export function CategoryCard({ slug, icon, productCount, locale }: CategoryCardP
         </span>
         <span className="text-[15px] font-semibold text-zinc-800">{t(slug)}</span>
         {productCount !== undefined && (
-          <span className="text-xs text-zinc-400">
+          <span className="text-xs text-zinc-600">
             {tc("productsCount", { count: productCount })}
           </span>
         )}

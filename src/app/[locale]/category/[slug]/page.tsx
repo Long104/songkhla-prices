@@ -10,7 +10,7 @@ import { getDb } from "@/db";
 import { products, categories } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { DEFAULT_PROVINCE_CODE } from "@/lib/provinces";
-import { getProvinceIdByCode, getProductsWithCheapestPrice, type ProductWithCheapestPrice } from "@/db/queries";
+import { getProvinceIdByCodeCached, getProductsWithCheapestPriceCached, type ProductWithCheapestPrice } from "@/db/cached-queries";
 
 const VALID_SLUGS = [
   "pork", "chicken", "beef",
@@ -44,20 +44,21 @@ export default async function CategoryPage({
   try {
     const db = getDb();
     if (db) {
-      const provinceId = await getProvinceIdByCode(db, provinceCode);
-      const iconRows = await db
-        .select({ icon: categories.icon })
-        .from(categories)
-        .where(eq(categories.slug, slug))
-        .limit(1);
+      const [provinceId, iconRows, productRows] = await Promise.all([
+        getProvinceIdByCodeCached(provinceCode),
+        db
+          .select({ icon: categories.icon })
+          .from(categories)
+          .where(eq(categories.slug, slug))
+          .limit(1),
+        db
+          .select({ id: products.id, slug: products.slug, nameTh: products.nameTh, nameEn: products.nameEn })
+          .from(products)
+          .innerJoin(categories, eq(products.categoryId, categories.id))
+          .where(eq(categories.slug, slug)),
+      ]);
       categoryIcon = iconRows.length > 0 ? iconRows[0].icon : null;
-
-      const result = await db
-        .select({ id: products.id, slug: products.slug, nameTh: products.nameTh, nameEn: products.nameEn })
-        .from(products)
-        .innerJoin(categories, eq(products.categoryId, categories.id))
-        .where(eq(categories.slug, slug));
-      productList = await getProductsWithCheapestPrice(db, result, provinceId);
+      productList = await getProductsWithCheapestPriceCached(productRows, provinceId);
     }
   } catch {
     // DB not available
@@ -132,6 +133,7 @@ function CategoryContent({
               secondarySummary={p.secondarySummary}
               cheapestSourceNameTh={p.cheapestSourceNameTh}
               cheapestSourceNameEn={p.cheapestSourceNameEn}
+              cheapestSourceDate={p.cheapestSourceDate}
               sourceCount={p.sourceCount}
               locale={locale}
             />

@@ -1,30 +1,26 @@
 
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { getDb } from "@/db";
 import { categories, prices, products, sources, productSourceMappings } from "@/db/schema";
 import { writeScraperResults, toDateOnly } from "./db-writer";
 import type { ScrapedPrice } from "./types";
 import type { Scraper } from "./types";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 describe("db-writer", () => {
   let db: NonNullable<ReturnType<typeof getDb>>;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     db = getDb()!;
     // Clean up previous test data
-    await db.delete(prices);
-    await db.delete(productSourceMappings);
-    await db.delete(products);
-    await db.delete(sources);
-    await db.delete(categories);
+    await db.execute(sql`TRUNCATE TABLE prices, product_source_mappings, products, sources, categories RESTART IDENTITY CASCADE`);
   });
 
   it("should update an existing price on conflict", async () => {
     // 1. Seed initial data
-    const [category] = await db.insert(categories).values({ slug: "test-cat", nameTh: "Test", nameEn: "Test", sortOrder: 0 }).returning();
-    const [source] = await db.insert(sources).values({ slug: "test-source", nameTh: "Test", nameEn: "Test", url: "http://test.com", type: "supermarket" }).returning();
-    const [product] = await db.insert(products).values({ slug: "test-product", nameTh: "Test Product", categoryId: category.id }).returning();
+    const [category] = await db.insert(categories).values({ id: 200, slug: "test-cat", nameTh: "Test", nameEn: "Test", sortOrder: 0 }).returning();
+    const [source] = await db.insert(sources).values({ id: 200, slug: "test-source", nameTh: "Test", nameEn: "Test", url: "http://test.com", type: "supermarket" }).returning();
+    const [product] = await db.insert(products).values({ id: 200, slug: "test-product", nameTh: "Test Product", categoryId: category.id }).returning();
     await db.insert(productSourceMappings).values({ productId: product.id, sourceId: source.id, sourceProductName: "Test Product" });
 
     const today = new Date();

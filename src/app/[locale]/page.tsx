@@ -8,8 +8,7 @@ import { SearchBar } from "@/components/search-bar";
 import { ProvinceSelector } from "@/components/province-selector";
 import { PriceChangesList } from "@/components/price-changes-list";
 import { EmptyState } from "@/components/empty-state";
-import { getDb } from "@/db";
-import { getCategoryProductCounts, getProvinceIdByCode, getRecentPriceChanges, type PriceChangeItem } from "@/db/queries";
+import { getCategoryProductCountsCached, getProvinceIdByCodeCached, getRecentPriceChangesCached, type PriceChangeItem } from "@/db/cached-queries";
 import { DEFAULT_PROVINCE_CODE } from "@/lib/provinces";
 
 const CATEGORIES = [
@@ -53,20 +52,13 @@ export default async function HomePage({
   let counts = new Map<string, number>();
   let changes: PriceChangeItem[] = [];
 
-  try {
-    const db = getDb();
-    if (db) {
-      const provinceId = await getProvinceIdByCode(db, provinceCode);
-      const [countRows, changeRows] = await Promise.all([
-        getCategoryProductCounts(db),
-        getRecentPriceChanges(db, provinceId, 8),
-      ]);
-      counts = new Map(countRows.map((c) => [c.slug, c.count]));
-      changes = changeRows;
-    }
-  } catch {
-    // DB not available — render empty states
-  }
+  const provinceId = await getProvinceIdByCodeCached(provinceCode);
+  const [countRows, changeRows] = await Promise.all([
+    getCategoryProductCountsCached(),
+    getRecentPriceChangesCached(provinceId),
+  ]);
+  counts = new Map(countRows.map((c) => [c.slug, c.count]));
+  changes = changeRows;
 
   return <HomeContent locale={locale} counts={counts} changes={changes} />;
 }

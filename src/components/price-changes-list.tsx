@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ChevronRight, TrendingUp } from "lucide-react";
 import type { PriceChangeItem } from "@/db/queries";
-import { shortUnit } from "@/lib/utils";
+import { shortUnit, formatDate } from "@/lib/utils";
 
 interface PriceChangesListProps {
   items: PriceChangeItem[];
@@ -15,6 +15,7 @@ interface PriceChangesListProps {
  */
 export function PriceChangesList({ items, locale }: PriceChangesListProps) {
   const t = useTranslations("common");
+  const tc = useTranslations("common");
 
   return (
     <ul className="space-y-2">
@@ -25,6 +26,7 @@ export function PriceChangesList({ items, locale }: PriceChangesListProps) {
           <li key={item.slug}>
             <Link
               href={`/${locale}/product/${item.slug}`}
+              aria-label={`${display} — ฿${Number(item.minPrice).toFixed(2)}`}
               className="group flex items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 transition hover:border-green-200 hover:bg-green-50/50"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
@@ -32,14 +34,14 @@ export function PriceChangesList({ items, locale }: PriceChangesListProps) {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-zinc-800">{display}</p>
-                <p className="mt-0.5 truncate text-xs text-zinc-400">
-                  {t("cheapestAt")} {source}
+                <p className="mt-0.5 truncate text-xs text-zinc-600">
+                  {t("cheapestAt")} {source} · {tc("updatedShort", { date: formatDate(item.sourceDate, locale) })}
                 </p>
               </div>
               <p className="shrink-0 text-base font-bold text-orange-600">
                 ฿{Number(item.minPrice).toFixed(2)}
                 {item.minUnit && (
-                  <span className="ml-0.5 text-xs font-normal text-zinc-400">
+                  <span className="ml-0.5 text-xs font-normal text-zinc-600">
                     {shortUnit(item.minUnit)}
                   </span>
                 )}

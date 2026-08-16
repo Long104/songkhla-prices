@@ -64,6 +64,7 @@ export interface UnitFamilySummary {
   maxPrice: number | null;
   cheapestSourceNameTh: string | null;
   cheapestSourceNameEn: string | null;
+  cheapestSourceDate?: string | null;
 }
 
 export interface PriceInputRow {
@@ -71,6 +72,7 @@ export interface PriceInputRow {
   unit: string;
   sourceNameTh: string;
   sourceNameEn: string | null;
+  sourceDate?: string | null;
 }
 
 const FAMILY_PRECEDENCE: UnitFamily[] = ["weight", "volume", "pack", "count"];
@@ -129,6 +131,7 @@ export function summarizePriceFamilies(rows: PriceInputRow[]): {
       maxPrice: maxPrice > minRow.price ? maxPrice : null,
       cheapestSourceNameTh: minRow.sourceNameTh,
       cheapestSourceNameEn: minRow.sourceNameEn,
+      cheapestSourceDate: minRow.sourceDate ?? null,
     });
   }
 

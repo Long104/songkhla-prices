@@ -29,6 +29,7 @@ function testDatabaseUrl(): string {
 export default defineConfig({
   test: {
     environment: "node",
+    fileParallelism: false,
     env: {
       DATABASE_URL: testDatabaseUrl(),
       NODE_ENV: "test",

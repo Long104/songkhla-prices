@@ -91,10 +91,12 @@
   --font-sans: var(--font-sans-stack);
 }
 
+:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+
 @layer base {
   * {
     border-color: var(--color-border);
-    outline-color: color-mix(in oklab, var(--color-ring) 50%, transparent);
+    outline-color: var(--color-ring);
   }
 
   body {

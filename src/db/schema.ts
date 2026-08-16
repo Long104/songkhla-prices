@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   date,
   index,
@@ -45,16 +45,25 @@ export const categories = pgTable("categories", {
 /**
  * Canonical products. Thai name is primary; English name is a subtitle where available.
  */
-export const products = pgTable("products", {
-  id: serial("id").primaryKey(),
-  slug: varchar("slug", { length: 100 }).notNull().unique(),
-  nameTh: varchar("name_th", { length: 200 }).notNull(),
-  nameEn: varchar("name_en", { length: 200 }),
-  categoryId: integer("category_id")
-    .notNull()
-    .references(() => categories.id),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const products = pgTable(
+  "products",
+  {
+    id: serial("id").primaryKey(),
+    slug: varchar("slug", { length: 100 }).notNull().unique(),
+    nameTh: varchar("name_th", { length: 200 }).notNull(),
+    nameEn: varchar("name_en", { length: 200 }),
+    categoryId: integer("category_id")
+      .notNull()
+      .references(() => categories.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("products_name_trgm_idx").using(
+      "gin",
+      sql`${table.nameTh} gin_trgm_ops, ${table.nameEn} gin_trgm_ops`
+    ),
+  ],
+);
 
 /**
  * All 77 Thai provinces. code "90" = Songkhla (default province).

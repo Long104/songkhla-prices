@@ -11,7 +11,8 @@ import { getDb } from "@/db";
 import { products, categories } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { DEFAULT_PROVINCE_CODE } from "@/lib/provinces";
-import { getProvinceIdByCode, getLatestPricesForProduct } from "@/db/queries";
+import { getProvinceIdByCodeCached, getLatestPricesForProductCached, getAllPricesForProductCached } from "@/db/cached-queries";
+import { computePriceChanges } from "@/lib/price-changes";
 import { formatDate } from "@/lib/utils";
 
 export default async function ProductPage({
@@ -31,7 +32,7 @@ export default async function ProductPage({
   try {
     const db = getDb();
     if (db) {
-      const provinceId = await getProvinceIdByCode(db, provinceCode);
+      const provinceId = await getProvinceIdByCodeCached(provinceCode);
       const rows = await db
         .select({
           id: products.id,
@@ -49,22 +50,29 @@ export default async function ProductPage({
         if (rows.length > 0) {
         const productRow = rows[0];
         product = productRow;
-        const rawPrices = await getLatestPricesForProduct(db, productRow.id, provinceId);
+        const rawPrices = await getLatestPricesForProductCached(productRow.id, provinceId);
+        const allPrices = await getAllPricesForProductCached(productRow.id, provinceId);
+        const priceChangesMap = computePriceChanges(allPrices);
 
-        priceRows = rawPrices.map((r) => ({
-          productName: productRow.nameTh,
-          sourceSlug: r.sourceSlug,
-          sourceNameTh: r.sourceNameTh,
-          sourceNameEn: r.sourceNameEn ?? "",
-          sourceType: r.sourceType,
-          price: r.price,
-          unit: r.unit,
-          normalizedPrice: r.normalizedPrice,
-          normalizedUnit: r.normalizedUnit,
-          weightGrams: r.weightGrams,
-          sourceDate: r.sourceDate,
-          isNational: r.provinceId === null,
-        }));
+        priceRows = rawPrices.map((r) => {
+          const key = `${r.sourceSlug}::${r.unit}`;
+          const changePct = priceChangesMap.get(key)?.changePct ?? null;
+          return {
+            productName: productRow.nameTh,
+            sourceSlug: r.sourceSlug,
+            sourceNameTh: r.sourceNameTh,
+            sourceNameEn: r.sourceNameEn ?? "",
+            sourceType: r.sourceType,
+            price: r.price,
+            unit: r.unit,
+            normalizedPrice: r.normalizedPrice,
+            normalizedUnit: r.normalizedUnit,
+            weightGrams: r.weightGrams,
+            sourceDate: r.sourceDate,
+            isNational: r.provinceId === null,
+            changePct,
+          };
+        });
       }
     }
   } catch {
@@ -125,7 +133,7 @@ function ProductContent({
         </div>
         <div className="min-w-0">
           <h1 className="text-2xl font-bold text-zinc-900 sm:text-3xl">{display}</h1>
-          {subtitle && <p className="mt-0.5 text-sm text-zinc-400">{subtitle}</p>}
+          {subtitle && <p className="mt-0.5 text-sm text-zinc-600">{subtitle}</p>}
           <Link
             href={`/${locale}/category/${product.categorySlug}`}
             className="mt-1.5 inline-flex items-center gap-0.5 text-xs font-medium text-green-700 hover:underline"
@@ -141,10 +149,10 @@ function ProductContent({
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
           <div>
             <h2 className="text-lg font-bold text-zinc-900">{tp("title")}</h2>
-            <p className="text-xs text-zinc-400">{tp("subtitle")}</p>
+            <p className="text-xs text-zinc-600">{tp("subtitle")}</p>
           </div>
           {lastUpdated && (
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-zinc-600">
               {tc("updatedOn", { date: formatDate(lastUpdated, locale) })}
             </p>
           )}

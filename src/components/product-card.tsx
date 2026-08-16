@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { shortUnit } from "@/lib/utils";
+import { shortUnit, formatDate } from "@/lib/utils";
 import { type UnitFamilySummary } from "@/lib/unit-families";
 
 interface ProductCardProps {
@@ -14,6 +14,7 @@ interface ProductCardProps {
   secondarySummary: UnitFamilySummary | null;
   cheapestSourceNameTh: string | null;
   cheapestSourceNameEn: string | null;
+  cheapestSourceDate: string | null;
   sourceCount: number;
   locale: string;
 }
@@ -26,6 +27,7 @@ export function ProductCard({
   secondarySummary,
   cheapestSourceNameTh,
   cheapestSourceNameEn,
+  cheapestSourceDate,
   sourceCount,
   locale,
 }: ProductCardProps) {
@@ -39,13 +41,13 @@ export function ProductCard({
   const maxPrice = primarySummary?.maxPrice ?? null;
 
   return (
-    <Link href={`/${locale}/product/${slug}`} className="group">
+    <Link href={`/${locale}/product/${slug}`} aria-label={display} className="group">
       <Card className="h-full p-4 transition duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="truncate text-[15px] font-semibold text-zinc-800">{display}</p>
             {subtitle && (
-              <p className="mt-0.5 truncate text-xs text-zinc-400">{subtitle}</p>
+              <p className="mt-0.5 truncate text-xs text-zinc-600">{subtitle}</p>
             )}
           </div>
           {sourceCount > 0 && (
@@ -60,13 +62,13 @@ export function ProductCard({
             <p className="text-lg font-bold text-orange-600">
               ฿{Number(cheapestPrice).toFixed(2)}
               {maxPrice !== null && Number(maxPrice) > Number(cheapestPrice) && (
-                <span className="text-sm font-normal text-zinc-400">
+                <span className="text-sm font-normal text-zinc-600">
                   {" "}
                   – ฿{Number(maxPrice).toFixed(2)}
                 </span>
               )}
               {cheapestUnit && (
-                <span className="ml-1 text-xs font-normal text-zinc-400">
+                <span className="ml-1 text-xs font-normal text-zinc-600">
                   {shortUnit(cheapestUnit)}
                 </span>
               )}
@@ -77,7 +79,7 @@ export function ProductCard({
                   <span>
                     {primarySummary.unitLabel}
                     {secondarySummary && (
-                      <span className="text-zinc-400">
+                      <span className="text-zinc-600">
                         {"   "}เริ่มต้น ฿{Number(secondarySummary.minPrice).toFixed(2)} / {secondarySummary.unitLabel}
                       </span>
                     )}
@@ -92,9 +94,14 @@ export function ProductCard({
                 </span>
               </p>
             )}
+            {cheapestSourceDate && (
+              <p className="mt-1 text-[11px] text-zinc-600">
+                {t("updatedShort", { date: formatDate(cheapestSourceDate, locale) })}
+              </p>
+            )}
           </div>
         ) : (
-          <p className="mt-3 text-sm text-zinc-400">{t("noData")}</p>
+          <p className="mt-3 text-sm text-zinc-600">{t("noData")}</p>
         )}
 
         <div className="mt-3 flex items-center justify-end text-green-700">

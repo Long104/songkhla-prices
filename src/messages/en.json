@@ -28,7 +28,8 @@
     "noResultsFriendlyHint": "Try another keyword like \"pork\", \"egg\" or \"rice\"",
     "searchPromptTitle": "Search for a product",
     "searchPromptHint": "Type a product name, e.g. pork belly, chicken eggs, jasmine rice",
-    "updatedOn": "Updated on {date}"
+    "updatedOn": "Updated on {date}",
+    "updatedShort": "Updated {date}"
   },
   "categories": {
     "pork": "Pork",
@@ -85,7 +86,9 @@
     "approxPerKg": "≈ ฿{price}/kg",
     "weightSpecification": "{grams}g",
     "unitMultiInfo": "Multiple units available. Switch tabs above to compare.",
-    "cheapestInFamily": "Cheapest in this unit"
+    "cheapestInFamily": "Cheapest in this unit",
+    "priceUp": "Price up {pct}%",
+    "priceDown": "Price down {pct}%"
   },
   "search": {
     "title": "Search products",
