@@ -210,7 +210,7 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
                   )}
                 >
                   {row.displayPriceText}
-                  {row.changePct !== undefined && row.changePct !== null && (
+                  {row.changePct !== undefined && row.changePct !== null && row.changePct !== 0 && (
                     <span
                       className={cn(
                         "text-xs font-semibold",
