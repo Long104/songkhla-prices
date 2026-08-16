@@ -18,3 +18,11 @@ node_modules/
 .env.local
 .env*.local
 tsconfig.tsbuildinfo
+
+# Local scratch / agent internals (not part of the app)
+verify.ts
+verify_cats.ts
+qa-screens/
+test-screenshots/
+.opencode/
+.ctx/

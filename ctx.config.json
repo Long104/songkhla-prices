@@ -1,0 +1,7 @@
+{
+  "project_type": "web",
+  "legacy-false": true,
+  "database-greenfield": true,
+  "tdd": true,
+  "typescript": true
+}
