@@ -16,11 +16,11 @@ export function Footer() {
           <span className="text-sm font-bold text-zinc-800">{tc("appName")}</span>
         </div>
         <p className="mt-2 text-sm text-zinc-500">{t("tagline")}</p>
-        <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+        <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-zinc-600">
           {t("dataSources")}
         </p>
         <p className="mt-1 text-sm text-zinc-600">{sources.join(" · ")}</p>
-        <p className="mt-2 text-xs text-zinc-400">{t("disclaimer")}</p>
+        <p className="mt-2 text-xs text-zinc-600">{t("disclaimer")}</p>
       </div>
     </footer>
   );

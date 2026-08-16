@@ -21,7 +21,7 @@ export function Header() {
           </span>
           <span className="truncate text-base font-bold text-zinc-900">
             {t("appName")}
-            <span className="ml-1.5 hidden text-xs font-normal text-zinc-400 sm:inline">
+            <span className="ml-1.5 hidden text-xs font-normal text-zinc-600 sm:inline">
               {t("tagline")}
             </span>
           </span>

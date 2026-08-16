@@ -6,7 +6,7 @@
     "searchButton": "ค้นหา",
     "province": "จังหวัด",
     "cheapest": "ถูกที่สุด",
-    "lastUpdated": "อัพเดทล่าสุด",
+    "lastUpdated": "อัปเดตล่าสุด",
     "unitMismatch": "หน่วยต่างกัน — เทียบราคาอาจไม่ตรงกัน",
     "noData": "ยังไม่มีข้อมูลราคา",
     "national": "ราคากลางทั่วประเทศ",
@@ -28,7 +28,7 @@
     "noResultsFriendlyHint": "ลองค้นหาด้วยชื่ออื่น เช่น \"หมู\" \"ไข่\" หรือ \"ข้าว\"",
     "searchPromptTitle": "ค้นหาสินค้าที่ต้องการ",
     "searchPromptHint": "พิมพ์ชื่อสินค้า เช่น หมูสามชั้น ไข่ไก่ ข้าวหอมมะลิ",
-    "updatedOn": "อัพเดทเมื่อ {date}",
+    "updatedOn": "อัปเดตเมื่อ {date}",
     "updatedShort": "อัปเดต {date}"
   },
   "categories": {
@@ -65,7 +65,7 @@
     "trendingTitle": "ราคาที่เปลี่ยนวันนี้",
     "trendingHint": "ราคาล่าสุดจากทุกแหล่งข้อมูล",
     "trendingEmptyTitle": "วันนี้ยังไม่มีราคาใหม่",
-    "trendingEmptyHint": "ราคาจะอัพเดททุกวันตอนเช้า กลับมาดูใหม่พรุ่งนี้ได้เลย",
+    "trendingEmptyHint": "ราคาจะอัปเดตทุกวันตอนเช้า กลับมาดูใหม่พรุ่งนี้ได้เลย",
     "viewAll": "ดูทั้งหมด"
   },
   "product": {
@@ -74,10 +74,10 @@
     "source": "แหล่งข้อมูล",
     "price": "ราคา",
     "unit": "หน่วย",
-    "date": "อัพเดท",
+    "date": "อัปเดต",
     "categoryLabel": "หมวดหมู่",
     "from": "เทียบจาก",
-    "source_date": "อัพเดท",
+    "source_date": "อัปเดต",
     "unitFamilyWeight": "ต่อกิโลกรัม",
     "unitFamilyVolume": "ต่อลิตร",
     "unitFamilyPack": "ต่อแพ็ค",

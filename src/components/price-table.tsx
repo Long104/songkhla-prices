@@ -234,7 +234,7 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
                 )}
               </div>
 
-              <div className="mt-2 flex items-center justify-end text-xs text-zinc-400 md:mt-0 md:justify-end">
+              <div className="mt-2 flex items-center justify-end text-xs text-zinc-600 md:mt-0 md:justify-end">
                 <span>
                   {t("source_date")}: {formatDate(row.sourceDate, locale)}
                 </span>
