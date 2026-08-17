@@ -285,9 +285,17 @@ export function filterLotusCandidates(
         c.finalPrice <= MAX_PRICE,
     );
 
+    // Cut-grade variants (หนัง = skin-on, ติดมัน = fatty) are a cheaper product
+    // tier, not the same product. Prefer plain-grade weight candidates when any
+    // exist; if ALL weight candidates are cut-grade (product only sold skin-on
+    // that day), fall back to cheapest overall rather than emitting nothing.
+    const isCutGrade = (name: string) => name.includes("หนัง") || name.includes("ติดมัน");
+    const plainWeightCands = weightCands.filter((c) => !isCutGrade(c.product.name));
+    const pool = plainWeightCands.length > 0 ? plainWeightCands : weightCands;
+
     // Emit cheapest weight candidate (per-kg price), if any
-    if (weightCands.length > 0) {
-      const cheapest = weightCands.reduce((a, b) => (a.perUow! < b.perUow! ? a : b));
+    if (pool.length > 0) {
+      const cheapest = pool.reduce((a, b) => (a.perUow! < b.perUow! ? a : b));
       const unit =
         cheapest.product.uow === "L" || detectUnitFromTitle(cheapest.product.name) === "บาท/ลิตร"
           ? "บาท/ลิตร"

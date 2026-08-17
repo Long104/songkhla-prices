@@ -164,8 +164,107 @@ describe("lotussScraper", () => {
       const weightItems = results.filter((r) => r.unit === "บาท/กก.");
       expect(weightItems).toHaveLength(1);
       expect(weightItems[0].price).toBe(129);
-    });
   });
+});
+
+describe("pickPerFamily cut-grade selection", () => {
+  // Case A: plain preferred over cut-grade
+  it("prefers plain-grade weight candidates over cheaper 'หนัง'/'ติดมัน' variants", async () => {
+    vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === "หมูสะโพก") {
+        return mockApiResponse([
+          makeWeightProduct("ซีพี หนังสะโพกหมูติดมัน กก.ละ", 27, 86),
+          makeWeightProduct("สะโพกหมู กก.ละ", 42.5, 135),
+        ]);
+      }
+      return mockApiResponse([]);
+    });
+
+    const results = await runScrape();
+    const porkHip = results.filter((r) => r.sourceProductName === "หมูสะโพก" && r.unit === "บาท/กก.");
+    expect(porkHip).toHaveLength(1);
+    expect(porkHip[0].price).toBe(135);
+    expect(porkHip[0].productTitle).toBe("สะโพกหมู กก.ละ");
+  });
+
+  // Case B: fallback when only cut-grade exists
+  it("falls back to cheapest overall when ONLY cut-grade weight candidates exist", async () => {
+    vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === "หมูสะโพก") {
+        return mockApiResponse([
+          makeWeightProduct("ซีพี หนังสะโพกหมูติดมัน กก.ละ", 27, 86),
+        ]);
+      }
+      return mockApiResponse([]);
+    });
+
+    const results = await runScrape();
+    const porkHip = results.filter((r) => r.sourceProductName === "หมูสะโพก" && r.unit === "บาท/กก.");
+    expect(porkHip).toHaveLength(1);
+    expect(porkHip[0].price).toBe(86);
+    expect(porkHip[0].productTitle).toContain("หนัง");
+  });
+
+  // Case B2: 'ติดมัน' modifier alone also excluded
+  it("prefers clean-cut over 'ติดมัน' (fatty) variant", async () => {
+    vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === "หมูสะโพก") {
+        return mockApiResponse([
+          makeWeightProduct("สะโพกหมูติดมัน กก.ละ", 30, 99),
+          makeWeightProduct("สะโพกหมู แต่งสะอาด กก.ละ", 45, 148),
+        ]);
+      }
+      return mockApiResponse([]);
+    });
+
+    const results = await runScrape();
+    const porkHip = results.filter((r) => r.sourceProductName === "หมูสะโพก" && r.unit === "บาท/กก.");
+    expect(porkHip).toHaveLength(1);
+    expect(porkHip[0].price).toBe(148);
+  });
+
+  // Case C: pack candidates untouched
+  it("does NOT filter cut-grade variants for pack candidates (keeps cheapest)", async () => {
+    vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === "หมูสะโพก") {
+        return mockApiResponse([
+          makePackProduct("ซีพี หนังสะโพกหมูติดมัน แพ็ค", 89),
+          makePackProduct("สะโพกหมู แพ็ค", 120),
+        ]);
+      }
+      return mockApiResponse([]);
+    });
+
+    const results = await runScrape();
+    const porkHip = results.filter((r) => r.sourceProductName === "หมูสะโพก" && r.unit === "บาท/ชิ้น");
+    expect(porkHip).toHaveLength(1);
+    expect(porkHip[0].price).toBe(89);
+  });
+
+  // Case C2: check that existing pack logic is not broken
+  it("still picks cheapest among multiple pack candidates", async () => {
+    vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === "หมูสะโพก") {
+        return mockApiResponse([
+          makePackProduct("ซีพี หนังสะโพกหมูติดมัน แพ็ค", 89),
+          makePackProduct("สะโพกหมู แพ็ค", 120),
+          makePackProduct("สะโพกหมู แพ็คเล็ก", 70),
+        ]);
+      }
+      return mockApiResponse([]);
+    });
+    const results = await runScrape();
+    const porkHip = results.filter((r) => r.sourceProductName === "หมูสะโพก" && r.unit === "บาท/ชิ้น");
+    expect(porkHip).toHaveLength(1);
+    expect(porkHip[0].price).toBe(70);
+  });
+});
+
 
   it("emits บาท/กก. row for หมูสะโพก when API returns only reversed titles", async () => {
     vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
