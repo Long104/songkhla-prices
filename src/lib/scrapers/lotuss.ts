@@ -41,7 +41,7 @@ const LOTUS_TRACKED_PRODUCTS: Record<string, string> = {
   "กาแฟ 3in1": "กาแฟ 3in1",
   "กาแฟคั่วบด": "กาแฟคั่วบด",
   "ชาเขียว": "ชาเขียว",
-  "อาหารพร้อมทานแช่แข็ง": "อาหารสำเร็จรูปแช่แข็ง",
+  "อาหารพร้อมทานแช่แข็ง": "อาหารพร้อมทานแช่แข็ง",
   "ไส้กรอก": "ไส้กรอก",
   "นักเก็ตไก่": "นักเก็ตไก่",
   "น้ำยาล้างห้องน้ำ": "น้ำยาทำความสะอาดห้องน้ำ",
@@ -195,6 +195,37 @@ export function filterLotusCandidates(
     // Lotus's titles reverse the word order: "สะโพกหมู ..." (never
     // "หมูสะโพก"). The bigram embeds หมู, so "สะโพกไก่" cannot match.
     return products.filter((p) => p.name.includes("สะโพกหมู"));
+  }
+
+  if (trackedName === "ผักคะน้า") {
+    // Lotus's sells kale simply as "คะน้า" (e.g. "โลตัส คะน้า 400 กรัม
+    // แพ็คละ", "คะน้ายอด กก.ละ") — never "ผักคะน้า".
+    return products.filter((p) => p.name.includes("คะน้า"));
+  }
+
+  if (trackedName === "ผลไม้กระป๋อง") {
+    // Canned fruit is titled with the syrup + can keywords (e.g.
+    // "โดลส้มแมนในน้ำเชื่อมกระป๋อง 425 กรัม"). Both must be present to
+    // avoid matching plain "กระป๋อง" packaging or "น้ำเชื่อม" syrups.
+    return products.filter((p) => p.name.includes("กระป๋อง") && p.name.includes("น้ำเชื่อม"));
+  }
+
+  if (trackedName === "กาแฟ 3in1") {
+    // Lotus's spells the blend as "3อิน1" (not "3in1"). Require both the
+    // "กาแฟ" and "3อิน1" keywords (e.g. "ซุปเปอร์ กาแฟ 3อิน1 ดับเบิ้ลแบล็ค").
+    return products.filter((p) => p.name.includes("กาแฟ") && p.name.includes("3อิน1"));
+  }
+
+  if (trackedName === "อาหารพร้อมทานแช่แข็ง") {
+    // Frozen ready meals are titled with "แช่แข็ง" plus a rice/pasta dish
+    // (e.g. "ซีพี ข้าวกะเพราหมูสับแช่แข็ง 235 กรัม",
+    // "นิปปุน สปาเก็ตตี้เบคอนผักโขมแช่แข็ง 380 กรัม"). Require "แช่แข็ง"
+    // AND (ข้าว OR สปาเก็ตตี้) to avoid matching generic frozen items.
+    return products.filter(
+      (p) =>
+        p.name.includes("แช่แข็ง") &&
+        (p.name.includes("ข้าว") || p.name.includes("สปาเก็ตตี้")),
+    );
   }
 
   return [];

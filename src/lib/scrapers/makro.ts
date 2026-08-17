@@ -247,7 +247,7 @@ const nfc = (s: string): string => s.normalize("NFC").replace(/\u0E4D\u0E32/g, "
  * "เซพแพ็ค สะโพกหมู 6 กก./แพ็ค") but forward-order "หมูสะโพก" still works via
  * the strict fallthrough (unlike "หมูสับ" which rejects non-alias strict matches).
  */
-function matchesName(title: string, trackedName: string): boolean {
+export function matchesName(title: string, trackedName: string): boolean {
   // Phase 1: Strict match (if title contains the name, it's a candidate)
   const strictMatch = title.includes(trackedName);
 
@@ -274,6 +274,14 @@ function matchesName(title: string, trackedName: string): boolean {
     // "สะโพกไก่" cannot match. Forward-order strict match still accepted
     // via the fallthrough below.
     if (title.includes("สะโพกหมู")) return true;
+  }
+
+  if (trackedName === "ไก่สด") {
+    // Makro sells only frozen whole chicken — titles use "ไก่ทั้งตัว"
+    // (e.g. "ไก่ทั้งตัวพร้อมเครื่องในแช่แข็ง 1.8-2.0 กก./ตัว"). Chicken
+    // parts (e.g. "สะโพกไก่") must NOT match: the bigram does not embed
+    // "ทั้งตัว". Strict "ไก่สด" titles still work via the fallthrough below.
+    if (title.includes("ไก่ทั้งตัว")) return true;
   }
 
   // Fallback to strict match result

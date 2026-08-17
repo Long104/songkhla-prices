@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { makroScraper } from "../makro";
+import { makroScraper, matchesName } from "../makro";
 import * as types from "../types";
 
 vi.mock("../types", () => ({
@@ -265,6 +265,20 @@ describe("makroScraper", () => {
     const results = await runScrape();
     const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
     expect(porkShoulder).toBeUndefined();
+  });
+
+  describe("matchesName function", () => {
+    it("'ไก่สด' tracked name matches title with 'ไก่ทั้งตัว'", () => {
+      const title = "ไก่ทั้งตัวพร้อมเครื่องในแช่แข็ง 1.8-2.0 กก./ตัว";
+      const trackedName = "ไก่สด";
+      expect(matchesName(title, trackedName)).toBe(true);
+    });
+
+    it("'ไก่สด' tracked name does NOT match title with 'สะโพกไก่'", () => {
+      const title = "สะโพกไก่ติดกระดูก 1 กก.";
+      const trackedName = "ไก่สด";
+      expect(matchesName(title, trackedName)).toBe(false);
+    });
   });
 
   it("falls back to /c/search when category yields zero candidates", async () => {

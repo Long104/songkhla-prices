@@ -275,19 +275,10 @@ const eppoMappings: MappingSeed[] = [
 const MOCK_PRODUCT_SLUGS = [
   // meat
   "pork-belly",
-  "pork-shoulder",
-  "pork-mince",
   "pork-ribs",
-  "pork-neck",
   "pork-ground",
-  "chicken-whole",
-  "chicken-ground",
-  "chicken-grilled",
-  "chicken-wings",
   "chicken-breast",
   "chicken-drumstick",
-  "beef",
-  "beef-sliced",
   // vegetables
   "morning-glory",
   "chinese-kale",
@@ -296,48 +287,23 @@ const MOCK_PRODUCT_SLUGS = [
   "tomato",
   "chili",
   "chinese-cabbage",
-  // rice
-  "jasmine-rice",
-  "sticky-rice",
-  "white-rice",
-  // eggs & dairy
-  "chicken-egg",
-  "duck-egg",
-  "fresh-milk",
-  // oil & fat
-  "palm-oil",
-  "soybean-oil",
-  // seasoning
-  "sugar",
-  "condensed-milk",
-  "fish-sauce",
-  "salt",
-  "coconut-milk",
   // fruit
   "orange",
   "mango",
   "banana",
   "watermelon",
   // seafood
-  "mackerel",
-  "black-tiger-shrimp",
   "white-shrimp",
   "squid",
   "blue-crab",
-  "green-mussel",
-  "saba-fish",
   "tilapia",
-  // beverages
-  "drinking-water",
-  "soda",
-  "fruit-juice",
-  // noodles
-  "instant-noodles",
-  "rice-noodles",
-  "glass-noodles",
-  // bakery
-  "bread",
-  "wheat-flour",
+  // eggs & dairy
+  "chicken-egg",
+  "duck-egg",
+  // oil & fat
+  // seasoning
+  "sugar",
+  "coconut-milk",
 ];
 
 const nameThBySlug = new Map(productSeeds.map((p) => [p.slug, p.nameTh]));
@@ -356,12 +322,9 @@ const simummuangMappings: MappingSeed[] = MOCK_PRODUCT_SLUGS.map((productSlug) =
 const makroMappings: MappingSeed[] = [
   // seafood
   { sourceSlug: "makro", productSlug: "mackerel", sourceProductName: "ปลาทู" },
-  { sourceSlug: "makro", productSlug: "black-tiger-shrimp", sourceProductName: "กุ้งกุลาดำ" },
   { sourceSlug: "makro", productSlug: "white-shrimp", sourceProductName: "กุ้งขาว" },
   { sourceSlug: "makro", productSlug: "squid", sourceProductName: "ปลาหมึก" },
   { sourceSlug: "makro", productSlug: "blue-crab", sourceProductName: "ปูม้า" },
-  { sourceSlug: "makro", productSlug: "green-mussel", sourceProductName: "หอยแมลงภั่ง" },
-  { sourceSlug: "makro", productSlug: "saba-fish", sourceProductName: "ปลาสำเตร็ง" },
   { sourceSlug: "makro", productSlug: "tilapia", sourceProductName: "ปลานิล" },
   // dry goods
   { sourceSlug: "makro", productSlug: "jasmine-rice", sourceProductName: "ข้าวหอมมะลิ" },
@@ -388,7 +351,6 @@ const makroMappings: MappingSeed[] = [
   { sourceSlug: "makro", productSlug: "chicken-breast", sourceProductName: "อกไก่" },
   { sourceSlug: "makro", productSlug: "chicken-drumstick", sourceProductName: "น่องไก่" },
   { sourceSlug: "makro", productSlug: "beef", sourceProductName: "เนื้อวัว" },
-  { sourceSlug: "makro", productSlug: "beef-sliced", sourceProductName: "เนื้อวัวสไลซ์" },
   // Vegetables
   { sourceSlug: "makro", productSlug: "chinese-kale", sourceProductName: "ผักคะน้า" },
   { sourceSlug: "makro", productSlug: "morning-glory", sourceProductName: "ผักบุ้ง" },
@@ -438,7 +400,6 @@ const lotussMappings: MappingSeed[] = [
   { sourceSlug: "lotuss", productSlug: "beef-sliced", sourceProductName: "เนื้อวัวสไลซ์" },
   { sourceSlug: "lotuss", productSlug: "mackerel", sourceProductName: "ปลาทู" },
   { sourceSlug: "lotuss", productSlug: "pork-mince", sourceProductName: "หมูสับ" },
-  { sourceSlug: "lotuss", productSlug: "chicken-whole", sourceProductName: "ไก่สด" },
   { sourceSlug: "lotuss", productSlug: "beef", sourceProductName: "เนื้อวัว" },
   { sourceSlug: "lotuss", productSlug: "chinese-kale", sourceProductName: "ผักคะน้า" },
   { sourceSlug: "lotuss", productSlug: "morning-glory", sourceProductName: "ผักบุ้ง" },
@@ -463,7 +424,6 @@ const lotussMappings: MappingSeed[] = [
   { sourceSlug: "lotuss", productSlug: "fruit-juice", sourceProductName: "น้ำผลไม้" },
   { sourceSlug: "lotuss", productSlug: "soda", sourceProductName: "น้ำอัดลม" },
   { sourceSlug: "lotuss", productSlug: "canned-fruit", sourceProductName: "ผลไม้กระป๋อง" },
-  { sourceSlug: "lotuss", productSlug: "canned-fish", sourceProductName: "ปลากระป๋อง" },
   { sourceSlug: "lotuss", productSlug: "pickled-mustard", sourceProductName: "ผักกาดดอง" },
   { sourceSlug: "lotuss", productSlug: "coffee-3in1", sourceProductName: "กาแฟ 3in1" },
   { sourceSlug: "lotuss", productSlug: "ground-coffee", sourceProductName: "กาแฟคั่วบด" },

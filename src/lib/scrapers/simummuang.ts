@@ -50,8 +50,19 @@ const PRODUCT_MATCH_MAP: Record<string, string[]> = {
   "ไข่เป็ด": ["ไข่เป็ด"],
   "กุ้งขาว": ["กุ้งขาว"],
   "ปูม้า": ["ปูม้า"],
-  "ปลาหมึก": ["หมึกไข่"],
+  "หมูสามชั้น": ["สามชั้น"],
+  "ซี่โครงหมู": ["ซี่โครงกลางหมู", "ซี่โครงหมู"],
+  "หมูบด": ["เนื้อหมูบด"],
+  "อกไก่": ["อกไก่"],
+  "น่องไก่": ["น่องไก่"],
+  "ปลานิล": ["ปลานิล"],
+  "กะทิ": ["กะทิ"],
+  "น้ำตาลทราย": ["=น้ำตาล"],
 };
+
+function termMatches(name: string, term: string): boolean {
+  return term.startsWith("=") ? name.trim() === term.slice(1) : name.includes(term);
+}
 
 function extractPrice(price: SmmPrice | undefined): number | null {
   if (!price) return null;
@@ -107,7 +118,7 @@ export const simummuangScraper: Scraper = {
       try {
         const matches = allProducts.filter((p) => {
           const name = p.th?.name || "";
-          return searchTerms.some((term) => name.includes(term));
+          return searchTerms.some((term) => termMatches(name, term));
         });
 
         let bestPrice: number | null = null;
@@ -123,7 +134,7 @@ export const simummuangScraper: Scraper = {
         if (bestPrice !== null) {
           const unitName = allProducts.find((p) => {
             const name = p.th?.name || "";
-            return searchTerms.some((term) => name.includes(term)) && extractPrice(p.price) === bestPrice;
+            return searchTerms.some((term) => termMatches(name, term)) && extractPrice(p.price) === bestPrice;
           })?.prod_unit_id?.th?.name || "กิโลกรัม";
 
           scrapedPrices.push({

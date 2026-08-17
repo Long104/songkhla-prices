@@ -356,6 +356,41 @@ describe("filterLotusCandidates", () => {
     expect(result[0].name).toBe("หมูสะโพก แพ็ค");
   });
 
+  it("matches 'ผักคะน้า' alias", () => {
+    const products = [makePackProduct("โลตัส คะน้า 400 กรัม แพ็คละ", 100)];
+    const result = filterLotusCandidates(products, "ผักคะน้า");
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("โลตัส คะน้า 400 กรัม แพ็คละ");
+  });
+
+  it("matches 'ผลไม้กระป๋อง' alias", () => {
+    const products = [makePackProduct("โดลส้มแมนในน้ำเชื่อมกระป๋อง 425 กรัม", 100)];
+    const result = filterLotusCandidates(products, "ผลไม้กระป๋อง");
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("โดลส้มแมนในน้ำเชื่อมกระป๋อง 425 กรัม");
+  });
+
+  it("matches 'กาแฟ 3in1' alias", () => {
+    const products = [makePackProduct("ซุปเปอร์ กาแฟ 3อิน1 ดับเบิ้ลแบล็ค 11 กรัม แพ็ค 25 ซอง", 100)];
+    const result = filterLotusCandidates(products, "กาแฟ 3in1");
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("ซุปเปอร์ กาแฟ 3อิน1 ดับเบิ้ลแบล็ค 11 กรัม แพ็ค 25 ซอง");
+  });
+
+  it("matches 'อาหารพร้อมทานแช่แข็ง' alias (rice)", () => {
+    const products = [makePackProduct("ซีพี ข้าวกะเพราหมูสับแช่แข็ง 235 กรัม", 100)];
+    const result = filterLotusCandidates(products, "อาหารพร้อมทานแช่แข็ง");
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("ซีพี ข้าวกะเพราหมูสับแช่แข็ง 235 กรัม");
+  });
+
+  it("matches 'อาหารพร้อมทานแช่แข็ง' alias (spaghetti)", () => {
+    const products = [makePackProduct("นิปปุน สปาเก็ตตี้เบคอนผักโขมแช่แข็ง 380 กรัม", 100)];
+    const result = filterLotusCandidates(products, "อาหารพร้อมทานแช่แข็ง");
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("นิปปุน สปาเก็ตตี้เบคอนผักโขมแช่แข็ง 380 กรัม");
+  });
+
   it("does NOT match 'สะโพกไก่' for 'หมูสะโพก'", () => {
     const products = [makePackProduct("สะโพกไก่ กก.ละ", 60)];
     const result = filterLotusCandidates(products, "หมูสะโพก");

@@ -106,4 +106,63 @@ describe("simummuangScraper", () => {
       expect(r.provinceCode).toBeNull();
     }
   });
+
+  describe("term matching logic", () => {
+    const mockApiProduct = (name: string, price: number = 100) => ({
+      th: { name },
+      price: { medium: { min: price, max: price } },
+      prod_unit_id: { th: { name: "กิโลกรัม" } },
+    });
+
+    const setupMockApi = (products: ReturnType<typeof mockApiProduct>[]) => {
+      vi.mocked(types.fetchJson).mockResolvedValue({
+        statusCode: 200,
+        data: {
+          data: products,
+          total: products.length,
+          totalPages: 1,
+          currentPage: 1,
+        },
+      });
+    };
+
+    it("exact match term '=น้ำตาล' matches 'น้ำตาล' but not 'ส้มน้ำตาล'", async () => {
+      // "ส้มน้ำตาล" is cheaper; if the "=น้ำตาล" term wrongly used substring
+      // semantics it would pull the 50 บาท price into sugar. With exact match
+      // the sugar price must come only from the "น้ำตาล" (100) product.
+      setupMockApi([
+        mockApiProduct("น้ำตาล", 100),
+        mockApiProduct("ส้มน้ำตาล", 50),
+      ]);
+      const results = await simummuangScraper.scrape();
+      const sugarMatch = results.find(p => p.sourceProductName === "น้ำตาลทราย");
+      expect(sugarMatch).toBeDefined();
+      expect(sugarMatch?.price).toBe(100);
+    });
+
+    it("'หมูสามชั้น' map entry matches real API name 'เนื้อสามชั้นหมู'", async () => {
+      setupMockApi([mockApiProduct("เนื้อสามชั้นหมู")]);
+      const results = await simummuangScraper.scrape();
+      const porkBellyMatch = results.find(p => p.sourceProductName === "หมูสามชั้น");
+      expect(porkBellyMatch).toBeDefined();
+    });
+
+    it("'ซี่โครงหมู' entry matches 'ซี่โครงกลางหมู' but NOT 'ซี่โครงไก่'", async () => {
+       setupMockApi([
+        mockApiProduct("ซี่โครงกลางหมู"),
+        mockApiProduct("ซี่โครงไก่"),
+      ]);
+      const results = await simummuangScraper.scrape();
+      const porkRibsMatch = results.find(p => p.sourceProductName === "ซี่โครงหมู");
+      expect(porkRibsMatch).toBeDefined();
+      expect(results.length).toBe(1);
+    });
+
+    it("unprefixed terms keep substring semantics ('คะน้า' still matches 'ต้นคะน้า')", async () => {
+      setupMockApi([mockApiProduct("ต้นคะน้า")]);
+      const results = await simummuangScraper.scrape();
+      const kaleMatch = results.find(p => p.sourceProductName === "ผักคะน้า");
+      expect(kaleMatch).toBeDefined();
+    });
+  });
 });
