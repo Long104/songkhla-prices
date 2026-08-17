@@ -51,7 +51,31 @@ export interface MappedCoverage {
   latestPrice: { scrapedAt: Date; price: string } | null;
 }
 
-export type CoverageState = "PRESENT" | "STALE" | "MISSING";
+export type CoverageState = "PRESENT" | "STALE" | "MISSING" | "EXPLAINED";
+
+/**
+ * Known permanent gaps that should not trigger audit failure.
+ *
+ * MAINTENANCE NOTE:
+ * New MISSING gaps must be diagnosed. If permanent, add to this list with a reason.
+ * Never delete an entry silently.
+ */
+export const KNOWN_GAPS: ReadonlyArray<{
+  productSlug: string;
+  sourceSlug: string;
+  reason: string;
+}> = [
+  {
+    productSlug: "chinese-cabbage",
+    sourceSlug: "makro",
+    reason: "Typesense category rotation — covered by search fallback on most runs",
+  },
+  {
+    productSlug: "mango",
+    sourceSlug: "dit",
+    reason: "seasonal — gov report omits it off-season",
+  },
+];
 
 export interface CoverageStatus {
   status: CoverageState;
@@ -81,6 +105,7 @@ export interface ReportCounts {
   present: number;
   stale: number;
   missing: number;
+  explained: number;
   unmapped: number;
 }
 
@@ -130,11 +155,19 @@ export function classifyCoverage(
   mapping: MappedCoverage,
   recencyWindowHours: number,
   cadence: Record<string, number> = SOURCE_CADENCE_HOURS,
+  knownGaps: ReadonlyArray<{ productSlug: string; sourceSlug: string; reason: string }> = KNOWN_GAPS,
 ): CoverageStatus {
   const sourceSlug = mapping.source.slug.toUpperCase();
   const cadenceHours = cadence[sourceSlug] ?? recencyWindowHours;
 
+  const gap = knownGaps.find(
+    (g) => g.productSlug === mapping.product.slug && g.sourceSlug === mapping.source.slug
+  );
+
   if (!mapping.latestPrice) {
+    if (gap) {
+      return { status: "EXPLAINED", reason: gap.reason };
+    }
     return {
       status: "MISSING",
       reason: "no historical price row for this mapping (all expected units absent)",
@@ -147,6 +180,10 @@ export function classifyCoverage(
 
   if (ageHours <= cadenceHours) {
     return { status: "PRESENT", reason: `latest ${ageHours.toFixed(1)}h <= ${cadenceHours}h cutoff` };
+  }
+
+  if (gap) {
+    return { status: "EXPLAINED", reason: gap.reason };
   }
 
   return {
@@ -193,21 +230,23 @@ export function formatReport(
     present: sorted.filter((r) => r.status === "PRESENT").length,
     stale: sorted.filter((r) => r.status === "STALE").length,
     missing: sorted.filter((r) => r.status === "MISSING").length,
+    explained: sorted.filter((r) => r.status === "EXPLAINED").length,
     unmapped: unmappedProducts.length,
   };
 
   const lines: string[] = [];
   lines.push(
-    `mapped=${counts.mapped} present=${counts.present} stale=${counts.stale} missing=${counts.missing} unmapped=${counts.unmapped}`
+    `mapped=${counts.mapped} present=${counts.present} stale=${counts.stale} missing=${counts.missing} explained=${counts.explained} unmapped=${counts.unmapped}`
   );
   lines.push(
-    `${pad("productSlug", 24)}\t${pad("source", 12)}	${pad("unit", 14)}	status	lastScraped`
+    `${pad("productSlug", 24)}\t${pad("source", 12)}\t${pad("unit", 14)}\tstatus\tlastScraped`
   );
 
   for (const r of sorted) {
     const last = r.lastScraped ? r.lastScraped.toISOString() : "—";
+    const reason = r.status === "EXPLAINED" ? ` ${r.reason}` : "";
     lines.push(
-      `${pad(r.productSlug, 24)}	${pad(r.source, 12)}	${pad(r.unit ?? "—", 14)}	${r.status}	${last}`
+      `${pad(r.productSlug, 24)}\t${pad(r.source, 12)}\t${pad(r.unit ?? "—", 14)}\t${r.status}\t${last}${reason}`
     );
   }
 
@@ -224,7 +263,7 @@ export function formatReport(
   const unresolved = counts.missing + counts.stale;
   lines.push("");
   lines.push(
-    `summary: mapped=${counts.mapped} present=${counts.present} stale=${counts.stale} missing=${counts.missing} unmapped=${counts.unmapped} -> ${unresolved === 0 ? "PASS" : "FAIL (unresolved gaps)"}`,
+    `summary: mapped=${counts.mapped} present=${counts.present} stale=${counts.stale} missing=${counts.missing} explained=${counts.explained} unmapped=${counts.unmapped} -> ${unresolved === 0 ? "PASS" : "FAIL (unresolved gaps)"}`,
   );
 
   const exitCode: 0 | 1 = unresolved === 0 ? 0 : 1;

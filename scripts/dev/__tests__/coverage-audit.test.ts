@@ -9,6 +9,7 @@ import {
   classifyCoverage,
   formatReport,
   toCoverageRow,
+  KNOWN_GAPS,
   type CoverageRow,
   type MappedCoverage,
   type UnmappedProduct,
@@ -33,6 +34,8 @@ const porkProduct = { id: 1, slug: "pork-belly", nameTh: "หมูสามช�
 const chickenProduct = { id: 2, slug: "chicken-whole", nameTh: "ไก่สด" };
 const eggProduct = { id: 3, slug: "chicken-egg", nameTh: "ไข่ไก่" };
 const oilProduct = { id: 4, slug: "palm-oil", nameTh: "น้ำมันปาล์ม" };
+const chineseCabbageProduct = { id: 5, slug: "chinese-cabbage", nameTh: "ผักกวางตุ้งฮุง" };
+const mangoProduct = { id: 6, slug: "mango", nameTh: "มะม่วง" };
 
 /** Base cadence used across tests (DIT 72h, EPPO 168h, default 48h). */
 const mockCadence: Record<string, number> = {
@@ -167,6 +170,44 @@ describe("classifyCoverage", () => {
     classifyCoverage(mapping, DEFAULT_WINDOW, mockCadence);
     expect(mapping.latestPrice?.price).toBe("150");
   });
+
+  it("returns EXPLAINED for a missing row that is on the KNOWN_GAPS allowlist", () => {
+    vi.setSystemTime(NOW);
+    const mapping: MappedCoverage = {
+      product: chineseCabbageProduct,
+      source: makro,
+      unit: null,
+      latestPrice: null,
+    };
+    const result = classifyCoverage(mapping, DEFAULT_WINDOW, mockCadence);
+    expect(result.status).toBe("EXPLAINED");
+    expect(result.reason).toContain("Typesense category rotation");
+  });
+
+  it("returns EXPLAINED for a stale row that is on the KNOWN_GAPS allowlist", () => {
+    vi.setSystemTime(NOW);
+    const mapping: MappedCoverage = {
+      product: mangoProduct,
+      source: dit,
+      unit: "บาท/กก.",
+      latestPrice: { scrapedAt: hoursAgo(500), price: "50" },
+    };
+    const result = classifyCoverage(mapping, DEFAULT_WINDOW, mockCadence);
+    expect(result.status).toBe("EXPLAINED");
+    expect(result.reason).toContain("seasonal");
+  });
+
+  it("returns PRESENT for a KNOWN_GAPS item if its price is current", () => {
+    vi.setSystemTime(NOW);
+    const mapping: MappedCoverage = {
+      product: chineseCabbageProduct, // This is in KNOWN_GAPS
+      source: makro,
+      unit: "บาท/กก.",
+      latestPrice: { scrapedAt: hoursAgo(2), price: "25" }, // but it's fresh
+    };
+    const result = classifyCoverage(mapping, DEFAULT_WINDOW, mockCadence);
+    expect(result.status).toBe("PRESENT");
+  });
 });
 
 // --- toCoverageRow -------------------------------------------------------------
@@ -254,13 +295,14 @@ describe("formatReport", () => {
     },
   ];
 
-  it("counts mapped/present/stale/missing/unmapped correctly", () => {
+  it("counts mapped/present/stale/missing/explained/unmapped correctly", () => {
     const { counts } = formatReport(rows, unmapped);
     expect(counts).toEqual({
       mapped: 4,
       present: 2,
       stale: 1,
       missing: 1,
+      explained: 0,
       unmapped: 1,
     });
   });
@@ -268,7 +310,7 @@ describe("formatReport", () => {
   it("prints the header line with all counts", () => {
     const { report } = formatReport(rows, unmapped);
     expect(report.split("\n")[0]).toBe(
-      "mapped=4 present=2 stale=1 missing=1 unmapped=1",
+      "mapped=4 present=2 stale=1 missing=1 explained=0 unmapped=1",
     );
   });
 
@@ -331,6 +373,69 @@ describe("formatReport", () => {
     const { counts, exitCode, report } = formatReport([], []);
     expect(counts.mapped).toBe(0);
     expect(exitCode).toBe(0);
-    expect(report.split("\n")[0]).toBe("mapped=0 present=0 stale=0 missing=0 unmapped=0");
+    expect(report.split("\n")[0]).toBe("mapped=0 present=0 stale=0 missing=0 explained=0 unmapped=0");
+  });
+
+  it("reports EXPLAINED rows in the table with the gap reason and does not count them as missing", () => {
+    const explainedRows: CoverageRow[] = [
+      {
+        productSlug: "chinese-cabbage",
+        source: "makro",
+        unit: null,
+        status: "EXPLAINED",
+        lastScraped: null,
+        reason: "Typesense category rotation — covered by search fallback on most runs",
+      },
+      {
+        productSlug: "pork-belly",
+        source: "makro",
+        unit: "บาท/กก.",
+        status: "PRESENT",
+        lastScraped: hoursAgo(2),
+        reason: "latest 2.0h <= 48h cutoff",
+      },
+    ];
+    const { counts, report, exitCode } = formatReport(explainedRows, []);
+    expect(counts.explained).toBe(1);
+    expect(counts.missing).toBe(0);
+    expect(report).toContain("EXPLAINED");
+    expect(report).toContain("Typesense category rotation");
+    expect(exitCode).toBe(0);
+    expect(report).toContain("PASS");
+  });
+
+  it("exits 1 when a gap is NOT on the allowlist (unresolved missing remains)", () => {
+    const unresolvedRows: CoverageRow[] = [
+      {
+        productSlug: "pork-belly",
+        source: "makro",
+        unit: null,
+        status: "MISSING",
+        lastScraped: null,
+        reason: "no historical price row for this mapping",
+      },
+    ];
+    const { counts, exitCode } = formatReport(unresolvedRows, []);
+    expect(counts.missing).toBe(1);
+    expect(counts.explained).toBe(0);
+    expect(exitCode).toBe(1);
+  });
+
+  it("summary line includes explained=N and is PASS when only explained gaps remain", () => {
+    const explainedRows: CoverageRow[] = [
+      {
+        productSlug: "mango",
+        source: "dit",
+        unit: null,
+        status: "EXPLAINED",
+        lastScraped: null,
+        reason: "seasonal — gov report omits it off-season",
+      },
+    ];
+    const { report } = formatReport(explainedRows, []);
+    const last = report.trimEnd().split("\n").at(-1);
+    expect(last).toBe(
+      "summary: mapped=1 present=0 stale=0 missing=0 explained=1 unmapped=0 -> PASS",
+    );
   });
 });
