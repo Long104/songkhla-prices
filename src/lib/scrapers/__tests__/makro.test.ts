@@ -267,6 +267,79 @@ describe("makroScraper", () => {
     expect(porkShoulder).toBeUndefined();
   });
 
+  it("falls back to /c/search when category yields zero candidates", async () => {
+    const searchHits = [
+      { document: makeDoc("เซพแพ็ค สะโพกหมูหั่นแกงแช่แข็ง 1 กก.", 118) },
+      { document: makeDoc("หมูสามชั้น 1 กก.", 180) }, // distractor
+    ];
+    vi.mocked(types.fetchJson).mockImplementation(async (url: string) => {
+      // Category calls return empty
+      if (typeof url === "string" && url.includes("/c/meat/pork.json")) {
+        return mockCategoryResponse([], 1, 0);
+      }
+      // Search call for the specific product returns hits
+      if (typeof url === "string" && url.includes("/c/search.json?q=%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B8%AA%E0%B8%B0%E0%B9%82%E0%B8%9E%E0%B8%81")) { // "หมูสะโพก"
+        return mockCategoryResponse(searchHits, 1, 2);
+      }
+      // Other categories are empty
+      return mockCategoryResponse([], 1, 0);
+    });
+
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder).toBeDefined();
+    expect(porkShoulder?.price).toBe(118);
+    expect(vi.mocked(types.fetchJson).mock.calls.some((c) => String(c[0]).includes("c/search.json"))).toBe(true);
+  });
+
+  it("does NOT call search when category already matched", async () => {
+    const categoryHits = [{ document: makeDoc("หมูสะโพก 1 กก.", 139) }];
+    vi.mocked(types.fetchJson).mockImplementation(async (url: string) => {
+      // The specific category call has a match
+      if (typeof url === "string" && url.includes("/c/meat/pork.json")) {
+        return mockCategoryResponse(categoryHits, 1, 1);
+      }
+      // All other calls (including search) are empty
+      return mockCategoryResponse([], 1, 0);
+    });
+
+    await runScrape();
+
+    // Assert that the search endpoint was never called for หมูสะโพก specifically
+    expect(vi.mocked(types.fetchJson).mock.calls.some((c) => String(c[0]).includes("c/search.json?q=%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B8%AA%E0%B8%B0%E0%B9%82%E0%B8%9E%E0%B8%81"))).toBe(false);
+  });
+
+  it("search fallback respects matchesName — rejects สะโพกไก่ from search results", async () => {
+    const searchHits = [{ document: makeDoc("สะโพกไก่ 1 กก.", 55) }]; // Wrong product
+    vi.mocked(types.fetchJson).mockImplementation(async (url: string) => {
+      if (typeof url === "string" && url.includes("/c/meat/pork.json")) {
+        return mockCategoryResponse([], 1, 0);
+      }
+      if (typeof url === "string" && url.includes("/c/search.json?q=%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B8%AA%E0%B8%B0%E0%B9%82%E0%B8%9E%E0%B8%81")) {
+        return mockCategoryResponse(searchHits, 1, 1);
+      }
+      return mockCategoryResponse([], 1, 0);
+    });
+
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder).toBeUndefined();
+  });
+
+  it("logs zero-candidate product names after both passes", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.mocked(types.fetchJson).mockResolvedValue(mockCategoryResponse([], 1, 0)); // All fetches are empty
+
+    await runScrape();
+
+    const logMessage = logSpy.mock.calls.find(call => call[0].startsWith("[Makro] No candidates for:"))?.[0];
+    expect(logMessage).toBeDefined();
+    expect(logMessage).toContain("หมูสะโพก");
+    expect(logMessage).toContain("ปลาทู"); // Check another product to be sure
+
+    logSpy.mockRestore();
+  });
+
   it("continues when one Makro page payload is malformed", async () => {
     vi.mocked(types.fetchJson).mockImplementation(async (url: string) => {
       if (typeof url === "string" && url.includes("meat/pork")) {

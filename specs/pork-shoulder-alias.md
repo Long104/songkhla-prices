@@ -134,3 +134,42 @@ Conventional commit, e.g. `fix(scrapers): match reversed-order "สะโพก�
 ### Notes
 - Scratch scripts `scripts/dev/debug-pork-shoulder.ts` / `scripts/dev/debug-makro.ts` exist only as untracked files in the MAIN tree, not this worktree — nothing to do; just don't create equivalents.
 - Seed mappings for both sources already exist (src/db/seed.ts:380,429), so scraped rows map to pork-shoulder automatically.
+
+---
+
+## CONTINUATION (round 2) — Makro category rotation gap
+
+### New evidence (live, this session)
+- Lotus's alias fix VERIFIED LIVE by user: 2 shoulder rows extracted (86 ฿/กก. + 55 ฿/ชิ้น). ✅ no work needed.
+- Makro category page-1 listing ROTATES (Typesense merchandising): "เซพแพ็ค สะโพกหมู 6 กก./แพ็ค" was hit 3/20 in run 1, ZERO สะโพก titles in run 2 (30 min later). Pagination params ignored by their API (known, documented in code). → matcher correctness is insufficient; any Makro product can silently vanish between runs.
+- **Search API DISCOVERED + VERIFIED LIVE (PM probe, buildId OsOiEo8xu6If2DYBr57VV):**
+  - Search page route: `/c/search?q=...` (found in client chunk: `href:"/c/search?q=*"` — same `/c/[...slug]` dynamic route as categories).
+  - Data endpoint: `GET https://www.makro.pro/_next/data/{buildId}/th/c/search.json?q={urlEncodedQuery}`
+  - Verified: `?q=สะโพกหมู` → 200, hits all relevant (118/135/144 ฿ etc.); `?q=หมูสะโพก` (forward order, = our tracked name verbatim) → 200, SAME relevant hits. **No per-product query aliases needed — search trackedName verbatim.**
+  - Use page 1 only (20 hits, top-relevance). No pagination.
+- `nextRequest`/`initialMultiSearchListData`/`multiSearchQueryArr` on category page: null/empty — dead leads, do not chase.
+
+### Plan A (chosen): per-product search fallback in makro.ts
+In `src/lib/scrapers/makro.ts` ONLY (+ tests):
+1. New helper `searchProducts(buildId, query): Promise<MakroProductDocument[]>` — fetch `_next/data/{buildId}/th/c/search.json?q={encodeURIComponent(query)}`, page 1, same 404/buildId-retry behavior as categories (extend `fetchWithBuildIdRetry` or add a sibling with identical retry shape). Reuse existing types — response shape is identical (`pageProps.initialSearchResult.hits[*].document`).
+2. In `scrape()`: after the category pass, collect tracked names with ZERO category candidates. For each (in a rate-limited loop, `await sleep(RATE_LIMIT_MS)` between calls): `searchProducts(buildId, trackedName)` → filter with `matchesName(nfc(title), nfc(trackedName))` → `normalizePrice` → cheapest → push result (identical to category path, incl. `provinceCode: null`, `sourceDate: today`).
+3. Zero-candidate logging: after both passes, `console.log("[Makro] No candidates for: <names>")` when non-empty — visible in cron output (monitoring hook per user request).
+4. NO changes to Lotus's scraper, db-writer, schema, seed, or other products.
+
+### TDD tests (extend makro.test.ts; write FIRST, confirm red)
+8. `it("falls back to /c/search when category yields zero candidates")` — meat/pork → empty; search.json?q=หมูสะโพก → `makeDoc("เซพแพ็ค สะโพกหมูหั่นแกงแช่แข็ง 1 กก.", 118)` + distractor `"หมูสามชั้น 1 กก."` → row หมูสะโพก price 118 บาท/กก.; assert the search URL was actually requested (`c/search.json` + `q=` in fetch calls).
+9. `it("does NOT call search when category already matched")` — meat/pork has หมูสะโพก hit → no fetch call containing `c/search.json`.
+10. `it("search fallback respects matchesName — rejects สะโพกไก่ from search results")` — search hits only `"สะโพกไก่ 1 กก."` → no หมูสะโพก row.
+11. `it("logs zero-candidate product names after both passes")` — spy console.log; category+search both empty for a product → log contains its name.
+
+### Round-2 Verification Exit Criteria
+- [ ] New tests red first, then `npx vitest run` full green (82+ tests), `npx tsc --noEmit` clean
+- [ ] Scratch scripts from user deleted (already done by PM: debug-makro-*.ts, verify-*.ts — confirm absent in git status)
+- [ ] REAL DB write via proper path: start worktree dev server `PORT=3100 npm run dev` (verify readiness on :3100 AND that it serves THIS app — hit /th and confirm Thai content, not another project), then `POST /api/cron/scrape` with Bearer $CRON_SECRET (from .env.local)
+- [ ] psql proof: pork-shoulder rows per source — expect dit ≥1, lotuss ≥1, makro ≥1 (query in Round-1 spec)
+- [ ] `curl http://localhost:3000/th/product/pork-shoulder` (main-tree server, same DB; cache ≤300s — wait/revalidate) shows lotuss + makro + dit rows
+- [ ] `npx tsx --env-file=.env.local scripts/dev/cross-check.ts` — หมูสะโพก no longer "DB: undefined"
+- [ ] Commit (conventional, no push), only makro.ts + makro.test.ts + spec/worklog; kill the :3100 server after verification
+
+### Fallback Plan B (ONLY if search endpoint breaks during implementation)
+Widen PRODUCT_CATEGORY_MAP with verified alternative slugs + document rotation gap as accepted risk + zero-candidate logging. Requires PM approval — Engineer returns BLOCKED with evidence instead.

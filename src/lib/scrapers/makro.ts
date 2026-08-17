@@ -82,6 +82,51 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/* ---------- Search API fetcher (Plan A fallback) ---------- */
+
+async function fetchSearchProducts(
+  buildId: string,
+  query: string,
+): Promise<MakroProductDocument[]> {
+  const url = `${MAKRO_BASE}/_next/data/${buildId}/th/c/search.json?q=${encodeURIComponent(query)}`;
+  try {
+    const data = await fetchJson<MakroCategoryResponse>(url);
+    const searchResult = data?.pageProps?.initialSearchResult;
+    if (!searchResult || (searchResult.hits ?? []).length === 0) return [];
+
+    // Search API doesn't paginate, but we still guard against unexpected page numbers
+    if (searchResult.page !== 1) return [];
+
+    return searchResult.hits.map((h) => h.document);
+  } catch (error) {
+    // On 404, we should propagate to the retry logic (build ID re-detection)
+    if (error instanceof Error && error.message.includes("404")) {
+      throw error;
+    }
+    // On any other error (malformed, network, etc.), log and return empty
+    console.error(`[Makro] Failed to fetch search query '${query}':`, error);
+    return [];
+  }
+}
+
+async function fetchSearchProductsWithBuildIdRetry(
+  buildId: string,
+  query: string,
+  retryCount = 0,
+): Promise<{ products: MakroProductDocument[]; newBuildId: string }> {
+  try {
+    const products = await fetchSearchProducts(buildId, query);
+    return { products, newBuildId: buildId };
+  } catch (error) {
+    if (retryCount === 0 && error instanceof Error && error.message.includes("404")) {
+      console.log("[Makro] Build ID may have changed (search), re-detecting...");
+      const newId = await detectBuildId();
+      return fetchSearchProductsWithBuildIdRetry(newId, query, 1);
+    }
+    throw error;
+  }
+}
+
 const MAX_PAGES = 3;
 
 async function fetchCategoryProducts(
@@ -336,11 +381,12 @@ async function fetchWithBuildIdRetry(
 
 export const makroScraper: Scraper = {
   sourceSlug: "makro",
-  async scrape(): Promise<ScrapedPrice[]> {
+    async scrape(): Promise<ScrapedPrice[]> {
     try {
       let buildId = await detectBuildId();
       const today = new Date();
       const results: ScrapedPrice[] = [];
+      const matchedNames = new Set<string>();
 
       // Dedupe categories to fetch.
       const categoriesToFetch = [...new Set(Object.values(PRODUCT_CATEGORY_MAP).flat())];
@@ -358,7 +404,7 @@ export const makroScraper: Scraper = {
         await sleep(RATE_LIMIT_MS);
       }
 
-      // Match tracked products: pick the cheapest matching product (lowest
+      // Pass 1 — category matching: pick the cheapest matching product (lowest
       // normalized price per kg/unit) as the base wholesale price.
       for (const [trackedName, categorySlugs] of Object.entries(PRODUCT_CATEGORY_MAP)) {
         try {
@@ -385,9 +431,53 @@ export const makroScraper: Scraper = {
             provinceCode: null, // national wholesale reference
             sourceDate: today,
           });
+          matchedNames.add(trackedName);
         } catch (itemErr) {
           console.error(`[Makro] Error processing product "${trackedName}":`, itemErr);
         }
+      }
+
+      // Pass 2 — search fallback: the category top-20 listing rotates, so any
+      // tracked product with zero category candidates may still be findable
+      // via the site search API. Search the tracked name verbatim (both word
+      // orders return the same relevant hits) and match with the same rules.
+      const zeroCandidateNames: string[] = [];
+      for (const trackedName of Object.keys(PRODUCT_CATEGORY_MAP)) {
+        if (matchedNames.has(trackedName)) continue; // avoid duplicate rows
+
+        try {
+          const { products, newBuildId } = await fetchSearchProductsWithBuildIdRetry(buildId, trackedName);
+          buildId = newBuildId;
+          // Throttle EVERY search fetch (spec: RATE_LIMIT_MS between calls),
+          // regardless of whether candidates were found.
+          await sleep(RATE_LIMIT_MS);
+
+          const candidates = products.filter((p) => matchesName(nfc(p.title), nfc(trackedName)));
+          if (candidates.length > 0) {
+            const normalized = candidates
+              .map((p) => ({ ...normalizePrice(p, trackedName), product: p }))
+              .filter((n) => n.price > 0);
+
+            if (normalized.length > 0) {
+              const cheapest = normalized.reduce((a, b) => (b.price < a.price ? b : a));
+              results.push({
+                sourceProductName: trackedName,
+                price: cheapest.price,
+                unit: cheapest.unit,
+                provinceCode: null,
+                sourceDate: today,
+              });
+              continue; // found via search — not zero-candidate
+            }
+          }
+        } catch (searchErr) {
+          console.error(`[Makro] Search fallback failed for "${trackedName}":`, searchErr);
+        }
+        zeroCandidateNames.push(trackedName);
+      }
+
+      if (zeroCandidateNames.length > 0) {
+        console.log(`[Makro] No candidates for: ${zeroCandidateNames.join(", ")}`);
       }
 
       return results;
