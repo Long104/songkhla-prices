@@ -42,6 +42,7 @@ function makeDoc(
   title: string,
   displayPrice: number,
   packagingWeight: number = 1.0, // default 1kg for easy price assertions
+  overrides: Partial<MakroProductDocument> = {},
 ): MakroProductDocument {
   return {
     title,
@@ -59,6 +60,7 @@ function makeDoc(
     unitSize: "",
     unitType: "",
     unitFactor: 1,
+    ...overrides,
   };
 }
 
@@ -368,5 +370,119 @@ describe("makroScraper", () => {
     const porkNeck = results.find((r) => r.sourceProductName === "หมูคอสไลซ์");
     expect(porkNeck).toBeDefined();
     expect(porkNeck?.price).toBe(129);
+  });
+});
+
+describe("representative-price policy (case + cut-grade exclusion)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.mocked(types.fetchHtml).mockResolvedValue(
+      `<html><script id="__NEXT_DATA__">{"buildId":"test-build-id"}</script></html>`,
+    );
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  async function runScrape(): Promise<ReturnType<typeof makroScraper.scrape>> {
+    const promise = makroScraper.scrape();
+    await vi.runAllTimersAsync();
+    return promise;
+  }
+
+  it("A: excludes wholesale case when retail pack exists", async () => {
+    const hits = [
+      { document: makeDoc("สะโพกหมูตัดชิ้น 1 กก.", 135, 0.49) },
+      {
+        document: makeDoc("เซพแพ็ค สะโพกหมูหั่นแกงแช่แข็ง 1 ลัง (1 กก. x 10)", 1160, 1, {
+          unitSize: "10 unit(s)",
+          unitFactor: 10,
+        }),
+      },
+    ];
+    vi.mocked(types.fetchJson).mockResolvedValue(mockCategoryResponse(hits, 1, 2));
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder?.price).toBe(135);
+  });
+
+  it("A2: excludes wholesale case via unitSize signal", async () => {
+    const hits = [
+      { document: makeDoc("เซพแพ็ค สะโพกหมูหั่นแกงแช่แข็ง 1 กก.", 118, 1, { unitSize: "10 unit(s)" }) },
+      { document: makeDoc("สะโพกหมูสไลซ์ แพ็คถาด 1 กก.", 127) },
+    ];
+    vi.mocked(types.fetchJson).mockResolvedValue(mockCategoryResponse(hits, 1, 2));
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder?.price).toBe(127);
+  });
+
+  it("A3: excludes wholesale case via unitFactor signal", async () => {
+    const hits = [
+      { document: makeDoc("เซพแพ็ค สะโพกหมูหั่นแกงแช่แข็ง 1 กก.", 118, 1, { unitFactor: 10 }) },
+      { document: makeDoc("สะโพกหมูสไลซ์ แพ็คถาด 1 กก.", 127) },
+    ];
+    vi.mocked(types.fetchJson).mockResolvedValue(mockCategoryResponse(hits, 1, 2));
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder?.price).toBe(127);
+  });
+
+  it("B: falls back to case price when ONLY cases exist", async () => {
+    const hits = [
+      {
+        document: makeDoc("เซพแพ็ค สะโพกหมูหั่นแกงแช่แข็ง 1 ลัง (1 กก. x 10)", 1160, 1, {
+          unitSize: "10 unit(s)",
+          unitFactor: 10,
+        }),
+      },
+    ];
+    vi.mocked(types.fetchJson).mockResolvedValue(mockCategoryResponse(hits, 1, 1));
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder?.price).toBe(116);
+  });
+
+  it("C: excludes cut-grade variant when plain exists", async () => {
+    const hits = [
+      { document: makeDoc("สะโพกหมูติดหนัง 1 กก.", 99) },
+      { document: makeDoc("สะโพกหมูสไลซ์ แพ็คถาด 1 กก.", 127) },
+    ];
+    vi.mocked(types.fetchJson).mockResolvedValue(mockCategoryResponse(hits, 1, 2));
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder?.price).toBe(127);
+  });
+
+  it("C2: falls back to cut-grade price when ONLY cut-grade exists", async () => {
+    const hits = [{ document: makeDoc("สะโพกหมูติดหนัง 1 กก.", 99) }];
+    vi.mocked(types.fetchJson).mockResolvedValue(mockCategoryResponse(hits, 1, 1));
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder?.price).toBe(99);
+  });
+
+  it("P2: applies policy to search fallback path", async () => {
+    const searchHits = [
+      { document: makeDoc("สะโพกหมูตัดชิ้น 1 กก.", 135, 0.49) },
+      {
+        document: makeDoc("เซพแพ็ค สะโพกหมูหั่นแกงแช่แข็ง 1 ลัง (1 กก. x 10)", 1160, 1, {
+          unitSize: "10 unit(s)",
+          unitFactor: 10,
+        }),
+      },
+    ];
+    vi.mocked(types.fetchJson).mockImplementation(async (url: string) => {
+      if (typeof url === "string" && url.includes("/c/search.json")) {
+        return mockCategoryResponse(searchHits, 1, 2);
+      }
+      return mockCategoryResponse([], 1, 0); // category calls are empty
+    });
+
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder?.price).toBe(135);
   });
 });

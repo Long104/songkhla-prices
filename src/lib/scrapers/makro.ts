@@ -365,6 +365,42 @@ function normalizePrice(
   return { price: product.displayPrice, unit: "บาท/กก." };
 }
 
+/**
+ * Detect wholesale case/multipack listings (ลัง = case, "x N" title
+ * multiplier, or unitSize/unitFactor indicating >1 sellable units per pack).
+ * These per-kg prices undercut every retail pack and misrepresent the
+ * shelf price users compare against.
+ */
+function isBulkCase(p: MakroProductDocument): boolean {
+  const title = nfc(p.title);
+  if (title.includes("ลัง")) return true;
+  const mult = title.match(/[x×]\s*(\d+)/i);
+  if (mult && parseInt(mult[1], 10) > 1) return true;
+  const unitCount = p.unitSize.match(/^(\d+)\s*unit/i);
+  if (unitCount && parseInt(unitCount[1], 10) > 1) return true;
+  return p.unitFactor > 1;
+}
+
+/** Cut-grade modifiers mark a cheaper product tier (see lotuss.ts). */
+const isCutGrade = (title: string): boolean => title.includes("หนัง") || title.includes("ติดมัน");
+
+/**
+ * Representative-price policy: cheapest single-pack, plain-grade candidate.
+ * Wholesale cases and cut-grade variants are excluded ONLY when better
+ * candidates exist — if a dimension excludes everything (product sold only
+ * as cases / only skin-on that day), fall back to that dimension's full
+ * pool rather than dropping the product.
+ */
+function pickRepresentative<T extends { price: number; product: MakroProductDocument }>(
+  normalized: T[],
+): T {
+  let pool = normalized.filter((n) => !isBulkCase(n.product));
+  if (pool.length === 0) pool = normalized; // only cases exist — keep wholesale price
+  let preferred = pool.filter((n) => !isCutGrade(nfc(n.product.title)));
+  if (preferred.length === 0) preferred = pool; // only cut-grade — keep it
+  return preferred.reduce((a, b) => (b.price < a.price ? b : a));
+}
+
 /* ---------- Step 6: Build ID retry on 404 ---------- */
 
 async function fetchWithBuildIdRetry(
@@ -430,7 +466,7 @@ export const makroScraper: Scraper = {
 
           if (normalized.length === 0) continue;
 
-          const cheapest = normalized.reduce((a, b) => (b.price < a.price ? b : a));
+          const cheapest = pickRepresentative(normalized);
 
           results.push({
             sourceProductName: trackedName,
@@ -467,7 +503,7 @@ export const makroScraper: Scraper = {
               .filter((n) => n.price > 0);
 
             if (normalized.length > 0) {
-              const cheapest = normalized.reduce((a, b) => (b.price < a.price ? b : a));
+              const cheapest = pickRepresentative(normalized);
               results.push({
                 sourceProductName: trackedName,
                 price: cheapest.price,
