@@ -197,6 +197,10 @@ const nfc = (s: string): string => s.normalize("NFC").replace(/\u0E4D\u0E32/g, "
  *
  * `title` and `trackedName` are expected to already be NFC-folded (callers
  * pass `nfc(...)`), so no extra normalization happens here.
+ *
+ * Special handling for "หมูสะโพก": matches reversed "สะโพกหมู" (e.g.
+ * "เซพแพ็ค สะโพกหมู 6 กก./แพ็ค") but forward-order "หมูสะโพก" still works via
+ * the strict fallthrough (unlike "หมูสับ" which rejects non-alias strict matches).
  */
 function matchesName(title: string, trackedName: string): boolean {
   // Phase 1: Strict match (if title contains the name, it's a candidate)
@@ -217,6 +221,14 @@ function matchesName(title: string, trackedName: string): boolean {
     if (title.includes("หมูบดอนามัย") || title.includes("เนื้อหมูบด")) return true;
     // If we found a strict match but not an alias, reject (prevent "หมูบด" mapping)
     if (strictMatch) return false;
+  }
+
+  if (trackedName === "หมูสะโพก") {
+    // Reversed Thai word order: Makro titles use "สะโพกหมู" (e.g.
+    // "เซพแพ็ค สะโพกหมู 6 กก./แพ็ค"). The bigram embeds หมู, so
+    // "สะโพกไก่" cannot match. Forward-order strict match still accepted
+    // via the fallthrough below.
+    if (title.includes("สะโพกหมู")) return true;
   }
 
   // Fallback to strict match result

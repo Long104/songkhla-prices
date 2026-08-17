@@ -167,6 +167,21 @@ describe("lotussScraper", () => {
     });
   });
 
+  it("emits บาท/กก. row for หมูสะโพก when API returns only reversed titles", async () => {
+    vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      if (body.keyword === "หมูสะโพก") {
+        return mockApiResponse([makeWeightProduct("สะโพกหมู กก.ละ", 42.5, 170)]);
+      }
+      return mockApiResponse([]);
+    });
+
+    const results = await runScrape();
+    const pork = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(pork?.price).toBe(170);
+    expect(pork?.unit).toBe("บาท/กก.");
+  });
+
   it("skips term when API returns empty product list", async () => {
     vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
       const body = JSON.parse(init?.body as string);
@@ -316,6 +331,34 @@ describe("filterLotusCandidates", () => {
   it("returns empty array if no matches are found", () => {
     const products = [makePackProduct("ไก่สด", 99)];
     const result = filterLotusCandidates(products, "หมูสับ");
+    expect(result).toHaveLength(0);
+  });
+
+  it("falls back to reversed-order 'สะโพกหมู' for 'หมูสะโพก' when no strict match", () => {
+    const products = [
+      makePackProduct("สะโพกหมู กก.ละ", 155),
+      makePackProduct("ซีพี สะโพกหมูแต่งตัดชิ้น กก.ละ", 165),
+      makePackProduct("หมูสามชั้น กก.ละ", 180),
+    ];
+    const result = filterLotusCandidates(products, "หมูสะโพก");
+    expect(result).toHaveLength(2);
+    expect(result[0].name).toBe("สะโพกหมู กก.ละ");
+    expect(result[1].name).toBe("ซีพี สะโพกหมูแต่งตัดชิ้น กก.ละ");
+  });
+
+  it("strict forward-order 'หมูสะโพก' titles win over reversed fallback", () => {
+    const products = [
+      makePackProduct("หมูสะโพก แพ็ค", 100),
+      makePackProduct("สะโพกหมู กก.ละ", 90),
+    ];
+    const result = filterLotusCandidates(products, "หมูสะโพก");
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("หมูสะโพก แพ็ค");
+  });
+
+  it("does NOT match 'สะโพกไก่' for 'หมูสะโพก'", () => {
+    const products = [makePackProduct("สะโพกไก่ กก.ละ", 60)];
+    const result = filterLotusCandidates(products, "หมูสะโพก");
     expect(result).toHaveLength(0);
   });
 });

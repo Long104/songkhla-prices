@@ -168,6 +168,7 @@ async function searchTerm(term: string): Promise<LotusApiProduct[]> {
  *    - "หมูคอสไลซ์" → "สันคอ" / "หมูคอ" / "คอหมู" keyword match. "คอไก่"
  *      (chicken neck) is guarded against — it contains "คอ" but no pork-neck
  *      keyword.
+ *    - "หมูสะโพก" → "สะโพกหมู" (reversed Thai word order; all Lotus titles use this form)
  */
 export function filterLotusCandidates(
   products: LotusApiProduct[],
@@ -188,6 +189,12 @@ export function filterLotusCandidates(
     return products.filter(
       (p) => p.name.includes("หมูบดอนามัย") || p.name.includes("เนื้อหมูบด"),
     );
+  }
+
+  if (trackedName === "หมูสะโพก") {
+    // Lotus's titles reverse the word order: "สะโพกหมู ..." (never
+    // "หมูสะโพก"). The bigram embeds หมู, so "สะโพกไก่" cannot match.
+    return products.filter((p) => p.name.includes("สะโพกหมู"));
   }
 
   return [];

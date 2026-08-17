@@ -215,6 +215,58 @@ describe("makroScraper", () => {
     expect(vi.mocked(types.fetchJson).mock.calls.some((c) => String(c[0]).includes("page=3"))).toBe(false);
   });
 
+  it("matches reversed 'สะโพกหมู' alias for หมูสะโพก", async () => {
+    const hits = [
+      { document: makeDoc("เซพแพ็ค สะโพกหมู 6 กก./แพ็ค", 690, 6) },
+      { document: makeDoc("สะโพกหมู 1 กก.", 149) },
+    ];
+    vi.mocked(types.fetchJson).mockImplementation(async (url: string) => {
+      if (typeof url === "string" && url.includes("meat/pork")) {
+        return mockCategoryResponse(hits, 1, 2);
+      }
+      return mockCategoryResponse([], 1, 0);
+    });
+
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder).toBeDefined();
+    // min(690/6, 149/1) = 115
+    expect(porkShoulder?.price).toBe(115);
+    expect(porkShoulder?.unit).toBe("บาท/กก.");
+  });
+
+  it("still matches strict forward-order 'หมูสะโพก' title", async () => {
+    const hits = [{ document: makeDoc("หมูสะโพก 1 กก.", 139) }];
+    vi.mocked(types.fetchJson).mockImplementation(async (url: string) => {
+      if (typeof url === "string" && url.includes("meat/pork")) {
+        return mockCategoryResponse(hits, 1, 1);
+      }
+      return mockCategoryResponse([], 1, 0);
+    });
+
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder).toBeDefined();
+    expect(porkShoulder?.price).toBe(139);
+  });
+
+  it("does NOT match 'สะโพกไก่' for หมูสะโพก", async () => {
+    const poultryHits = [{ document: makeDoc("สะโพกไก่ 1 กก.", 55) }];
+    vi.mocked(types.fetchJson).mockImplementation(async (url: string) => {
+      if (typeof url === "string" && url.includes("meat/pork")) {
+        return mockCategoryResponse([], 1, 0);
+      }
+      if (typeof url === "string" && url.includes("meat/poultry")) {
+        return mockCategoryResponse(poultryHits, 1, 1);
+      }
+      return mockCategoryResponse([], 1, 0);
+    });
+
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder).toBeUndefined();
+  });
+
   it("continues when one Makro page payload is malformed", async () => {
     vi.mocked(types.fetchJson).mockImplementation(async (url: string) => {
       if (typeof url === "string" && url.includes("meat/pork")) {
