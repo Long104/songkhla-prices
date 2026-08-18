@@ -1,5 +1,5 @@
 {
-  "name": "cna",
+  "name": "songkhla-prices",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint src/",
-    "seed": "tsx src/db/seed.ts"
+    "test": "vitest",
+    "seed": "tsx src/db/seed.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -34,7 +37,7 @@
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
-    "eslint-config-next": "16.3.0",
+    "eslint-config-next": "15.5.23",
     "tailwindcss": "^4",
     "tsx": "^4.23.11",
     "typescript": "^5",
