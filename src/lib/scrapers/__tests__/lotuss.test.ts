@@ -182,7 +182,7 @@ describe("lotussScraper", () => {
       });
       const results = await runScrape();
       const pork = results.find((r) => r.sourceProductName === "หมูสะโพก" && r.unit === "บาท/กก.");
-      expect(pork?.productUrl).toBe("https://www.lotuss.com/shop/p/pork-ham-piece-cuting-ms-kg-22980776");
+      expect(pork?.productUrl).toBe("https://www.lotuss.com/th/product/pork-ham-piece-cuting-ms-kg-22980776");
     });
 
     it("emits URL from picked pack candidate's urlKey", async () => {
@@ -197,7 +197,7 @@ describe("lotussScraper", () => {
       });
       const results = await runScrape();
       const pork = results.find((r) => r.sourceProductName === "หมูบด");
-      expect(pork?.productUrl).toBe("https://www.lotuss.com/shop/p/cp-minced-pork-800g-12345");
+      expect(pork?.productUrl).toBe("https://www.lotuss.com/th/product/cp-minced-pork-800g-12345");
     });
 
     it("leaves productUrl undefined when urlKey is missing", async () => {

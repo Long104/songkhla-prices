@@ -175,7 +175,10 @@ export function filterLotusCandidates(
   products: LotusApiProduct[],
   trackedName: string,
 ): LotusApiProduct[] {
-  const strict = products.filter((p) => p.name.includes(trackedName));
+  const strict = products.filter((p) => {
+    if (trackedName === "ไข่ไก่" && p.name.includes("เต้าหู้")) return false;
+    return p.name.includes(trackedName);
+  });
   if (strict.length > 0) return strict;
 
   if (trackedName === "หมูคอสไลซ์") {
@@ -308,7 +311,7 @@ export function filterLotusCandidates(
         provinceCode: null,
         sourceDate: today,
         productTitle: cheapest.product.name,
-        productUrl: cheapest.product.urlKey ? `https://www.lotuss.com/shop/p/${cheapest.product.urlKey}` : undefined,
+        productUrl: cheapest.product.urlKey ? `https://www.lotuss.com/th/product/${cheapest.product.urlKey}` : undefined,
       });
     }
 
@@ -322,7 +325,7 @@ export function filterLotusCandidates(
         provinceCode: null,
         sourceDate: today,
         productTitle: cheapest.product.name,
-        productUrl: cheapest.product.urlKey ? `https://www.lotuss.com/shop/p/${cheapest.product.urlKey}` : undefined,
+        productUrl: cheapest.product.urlKey ? `https://www.lotuss.com/th/product/${cheapest.product.urlKey}` : undefined,
       });
     }
 
