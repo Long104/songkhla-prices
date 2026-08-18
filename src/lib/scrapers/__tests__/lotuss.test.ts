@@ -15,10 +15,12 @@ const makePackProduct = (
   finalPrice: number,
   id: number = 1,
   sku: string = "sku",
+  urlKey?: string,
 ): LotusApiProduct => ({
   id,
   name,
   sku,
+  urlKey,
   priceRange: {
     minimumPrice: {
       finalPrice: {
@@ -37,10 +39,12 @@ const makeWeightProduct = (
   uow: string = "KG",
   id: number = 1,
   sku: string = "sku",
+  urlKey?: string,
 ): LotusApiProduct => ({
   id,
   name,
   sku,
+  urlKey,
   sellingType: "weight",
   uow,
   priceRange: {
@@ -164,8 +168,51 @@ describe("lotussScraper", () => {
       const weightItems = results.filter((r) => r.unit === "บาท/กก.");
       expect(weightItems).toHaveLength(1);
       expect(weightItems[0].price).toBe(129);
+    });
+
+    it("emits URL from picked weight candidate's urlKey", async () => {
+      vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+        const body = JSON.parse(init?.body as string);
+        if (body.keyword === "หมูสะโพก") {
+          return mockApiResponse([
+            makeWeightProduct("สะโพกหมู กก.ละ", 42.5, 170, "KG", 1, "sku", "pork-ham-piece-cuting-ms-kg-22980776"),
+          ]);
+        }
+        return mockApiResponse([]);
+      });
+      const results = await runScrape();
+      const pork = results.find((r) => r.sourceProductName === "หมูสะโพก" && r.unit === "บาท/กก.");
+      expect(pork?.productUrl).toBe("https://www.lotuss.com/shop/p/pork-ham-piece-cuting-ms-kg-22980776");
+    });
+
+    it("emits URL from picked pack candidate's urlKey", async () => {
+      vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+        const body = JSON.parse(init?.body as string);
+        if (body.keyword === "หมูบด") {
+          return mockApiResponse([
+            makePackProduct("ซีพี หมูบดอนามัย 800g", 125, 1, "sku", "cp-minced-pork-800g-12345"),
+          ]);
+        }
+        return mockApiResponse([]);
+      });
+      const results = await runScrape();
+      const pork = results.find((r) => r.sourceProductName === "หมูบด");
+      expect(pork?.productUrl).toBe("https://www.lotuss.com/shop/p/cp-minced-pork-800g-12345");
+    });
+
+    it("leaves productUrl undefined when urlKey is missing", async () => {
+      vi.mocked(types.fetchJson).mockImplementation(async (_url, init) => {
+        const body = JSON.parse(init?.body as string);
+        if (body.keyword === "หมูบด") {
+          return mockApiResponse([makePackProduct("ซีพี หมูบดอนามัย 800g", 125)]);
+        }
+        return mockApiResponse([]);
+      });
+      const results = await runScrape();
+      const pork = results.find((r) => r.sourceProductName === "หมูบด");
+      expect(pork?.productUrl).toBeUndefined();
+    });
   });
-});
 
 describe("pickPerFamily cut-grade selection", () => {
   // Case A: plain preferred over cut-grade

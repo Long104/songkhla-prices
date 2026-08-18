@@ -408,6 +408,16 @@ describe("representative-price policy (case + cut-grade exclusion)", () => {
     expect(porkShoulder?.price).toBe(135);
   });
 
+  it("emits URL with makroId and id from the picked candidate", async () => {
+    const hits = [
+      { document: makeDoc("สะโพกหมูสไลซ์ แพ็คถาด 1 กก.", 127, 1, { makroId: 178630, id: "717863010789728" }) },
+    ];
+    vi.mocked(types.fetchJson).mockResolvedValue(mockCategoryResponse(hits, 1, 1));
+    const results = await runScrape();
+    const porkShoulder = results.find((r) => r.sourceProductName === "หมูสะโพก");
+    expect(porkShoulder?.productUrl).toBe("https://www.makro.pro/th/p/178630-717863010789728");
+  });
+
   it("A2: excludes wholesale case via unitSize signal", async () => {
     const hits = [
       { document: makeDoc("เซพแพ็ค สะโพกหมูหั่นแกงแช่แข็ง 1 กก.", 118, 1, { unitSize: "10 unit(s)" }) },

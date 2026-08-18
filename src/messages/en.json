@@ -88,7 +88,12 @@
     "unitMultiInfo": "Multiple units available. Switch tabs above to compare.",
     "cheapestInFamily": "Cheapest in this unit",
     "priceUp": "Price up {pct}%",
-    "priceDown": "Price down {pct}%"
+    "priceDown": "Price down {pct}%",
+    "viewAtStore": "View at store",
+    "variantLabel": "Type: {variant}",
+    "fresh": "Fresh",
+    "chilled": "Chilled",
+    "frozen": "Frozen"
   },
   "search": {
     "title": "Search products",

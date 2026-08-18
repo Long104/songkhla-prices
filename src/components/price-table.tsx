@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { classifyUnit, type UnitFamily } from "@/lib/unit-families";
 import { parseUnitWord, canonicalizeUnit } from "@/lib/unit-dictionary";
+import { classifyVariant, isValidProductUrl } from "@/lib/variant";
 
 export interface PriceRow {
   productName: string;
@@ -23,6 +24,8 @@ export interface PriceRow {
   sourceDate: string;
   isNational: boolean;
   changePct?: number | null;
+  productTitle?: string | null;
+  productUrl?: string | null;
 }
 
 interface PriceTableProps {
@@ -174,6 +177,14 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
           const isCheapest = cheapestPrice !== null && row.sortPrice === cheapestPrice;
           const name = locale === "th" ? row.sourceNameTh : row.sourceNameEn;
 
+          // Variant badge logic
+          const variant = classifyVariant(row.productTitle ?? null);
+          const variantLabel = variant ? t("variantLabel", { variant: t(variant) }) : null;
+
+          // Product URL link logic
+          const productUrl = isValidProductUrl(row.productUrl) ? row.productUrl : null;
+          const linkText = t("viewAtStore");
+
           return (
             <li
               key={`${row.sourceSlug}-${i}`}
@@ -201,6 +212,23 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
                   </p>
                 </div>
               </div>
+
+              {row.productTitle && (
+                <div className="mt-2 md:mt-0">
+                  <p className="text-xs text-zinc-500 truncate" title={row.productTitle ?? undefined}>
+                    {row.productTitle}
+                  </p>
+                  {variant && (
+                    <Badge
+                      variant="secondary"
+                      className="mt-1 text-xs"
+                      title={variantLabel ?? undefined}
+                    >
+                      {t(variant)}
+                    </Badge>
+                  )}
+                </div>
+              )}
 
               <div className="mt-2 text-right md:mt-0">
                 <p
@@ -239,6 +267,34 @@ export function PriceTable({ rows, locale }: PriceTableProps) {
                   {t("source_date")}: {formatDate(row.sourceDate, locale)}
                 </span>
               </div>
+
+              {productUrl && (
+                <div className="mt-2 flex items-center justify-end md:mt-0 md:justify-end">
+                  <a
+                    href={productUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 min-h-[44px]"
+                    aria-label={variantLabel ? `${linkText} (${variantLabel})` : linkText}
+                  >
+                    {linkText}
+                    <svg
+                      className="h-3 w-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 20"
+                      />
+                    </svg>
+                  </a>
+                </div>
+              )}
             </li>
           );
         })}

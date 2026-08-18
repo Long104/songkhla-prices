@@ -6,6 +6,7 @@ export interface ScrapedPrice {
   sourceDate: Date;
   /** Raw product title or context text — used for weight extraction at ingest */
   productTitle?: string;
+  productUrl?: string;
 }
 
 export interface Scraper {

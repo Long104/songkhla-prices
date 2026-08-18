@@ -474,6 +474,8 @@ export const makroScraper: Scraper = {
             unit: cheapest.unit,
             provinceCode: null, // national wholesale reference
             sourceDate: today,
+            productTitle: nfc(cheapest.product.title),
+            productUrl: `https://www.makro.pro/th/p/${cheapest.product.makroId}-${cheapest.product.id}`,
           });
           matchedNames.add(trackedName);
         } catch (itemErr) {
@@ -510,6 +512,8 @@ export const makroScraper: Scraper = {
                 unit: cheapest.unit,
                 provinceCode: null,
                 sourceDate: today,
+                productTitle: nfc(cheapest.product.title),
+                productUrl: `https://www.makro.pro/th/p/${cheapest.product.makroId}-${cheapest.product.id}`,
               });
               continue; // found via search — not zero-candidate
             }

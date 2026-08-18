@@ -42,6 +42,8 @@ export interface RawPriceRow {
   weightGrams: number | null;
   sourceDate: string;
   provinceId: number | null;
+  productTitle: string | null;
+  productUrl: string | null;
 }
 
 /**
@@ -81,7 +83,9 @@ export async function getLatestPricesForProduct(
       prices.normalized_unit as "normalizedUnit",
       prices.weight_grams as "weightGrams",
       prices.source_date as "sourceDate",
-      prices.province_id as "provinceId"
+      prices.province_id as "provinceId",
+      prices.product_title as "productTitle",
+      prices.product_url as "productUrl"
     FROM prices
     INNER JOIN sources ON prices.source_id = sources.id
     WHERE prices.product_id = ${productId}
@@ -120,7 +124,9 @@ export async function getLatestPricesForProducts(
       prices.normalized_unit as "normalizedUnit",
       prices.weight_grams as "weightGrams",
       prices.source_date as "sourceDate",
-      prices.province_id as "provinceId"
+      prices.province_id as "provinceId",
+      prices.product_title as "productTitle",
+      prices.product_url as "productUrl"
     FROM prices
     INNER JOIN sources ON prices.source_id = sources.id
     WHERE prices.product_id IN (${idsParam})
@@ -171,7 +177,9 @@ export async function getAllPricesForProduct(
       prices.normalized_unit as "normalizedUnit",
       prices.weight_grams as "weightGrams",
       prices.source_date as "sourceDate",
-      prices.province_id as "provinceId"
+      prices.province_id as "provinceId",
+      prices.product_title as "productTitle",
+      prices.product_url as "productUrl"
     FROM prices
     INNER JOIN sources ON prices.source_id = sources.id
     WHERE prices.product_id = ${productId}

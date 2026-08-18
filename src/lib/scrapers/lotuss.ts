@@ -100,6 +100,7 @@ export interface LotusApiProduct {
   priceRange: {
     minimumPrice: LotusMinimumPrice;
   };
+  urlKey?: string;        // verified product identifier for URL construction
 }
 
 export interface LotusSearchResponse {
@@ -307,6 +308,7 @@ export function filterLotusCandidates(
         provinceCode: null,
         sourceDate: today,
         productTitle: cheapest.product.name,
+        productUrl: cheapest.product.urlKey ? `https://www.lotuss.com/shop/p/${cheapest.product.urlKey}` : undefined,
       });
     }
 
@@ -320,6 +322,7 @@ export function filterLotusCandidates(
         provinceCode: null,
         sourceDate: today,
         productTitle: cheapest.product.name,
+        productUrl: cheapest.product.urlKey ? `https://www.lotuss.com/shop/p/${cheapest.product.urlKey}` : undefined,
       });
     }
 

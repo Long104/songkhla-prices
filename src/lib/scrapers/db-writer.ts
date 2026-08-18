@@ -57,25 +57,14 @@ export async function writeScraperResults(
         if (prov) provinceId = prov.id;
       }
 
-      const normalized = normalizeAtIngest(sp.price, sp.unit, sp.productTitle ?? sp.sourceProductName);
+        const normalized = normalizeAtIngest(sp.price, sp.unit, sp.productTitle ?? sp.sourceProductName);
 
-      await db
-        .insert(prices)
-        .values({
-          productId: mapping.productId,
-          sourceId: source.id,
-          provinceId,
-          price: sp.price.toString(),
-          unit: sp.unit,
-          normalizedPrice: normalized.normalizedPrice.toString(),
-          normalizedUnit: normalized.normalizedUnit,
-          weightGrams: normalized.weightGrams,
-          scrapedAt: new Date(),
-          sourceDate: toDateOnly(sp.sourceDate),
-        })
-        .onConflictDoUpdate({
-          target: [prices.productId, prices.sourceId, prices.provinceId, prices.sourceDate, prices.unit],
-          set: {
+        await db
+          .insert(prices)
+          .values({
+            productId: mapping.productId,
+            sourceId: source.id,
+            provinceId,
             price: sp.price.toString(),
             unit: sp.unit,
             normalizedPrice: normalized.normalizedPrice.toString(),
@@ -83,8 +72,23 @@ export async function writeScraperResults(
             weightGrams: normalized.weightGrams,
             scrapedAt: new Date(),
             sourceDate: toDateOnly(sp.sourceDate),
-          },
-        });
+            productTitle: sp.productTitle ?? null,
+            productUrl: sp.productUrl ?? null,
+          })
+          .onConflictDoUpdate({
+            target: [prices.productId, prices.sourceId, prices.provinceId, prices.sourceDate, prices.unit],
+            set: {
+              price: sp.price.toString(),
+              unit: sp.unit,
+              normalizedPrice: normalized.normalizedPrice.toString(),
+              normalizedUnit: normalized.normalizedUnit,
+              weightGrams: normalized.weightGrams,
+              scrapedAt: new Date(),
+              sourceDate: toDateOnly(sp.sourceDate),
+              productTitle: sp.productTitle ?? null,
+              productUrl: sp.productUrl ?? null,
+            },
+          });
       insertedCount++;
     } catch (err) {
       console.error(`[cron] Failed to upsert price for "${sp.sourceProductName}":`, err);

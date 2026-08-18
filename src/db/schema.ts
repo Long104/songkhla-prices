@@ -100,6 +100,8 @@ export const prices = pgTable(
     normalizedUnit: varchar("normalized_unit", { length: 50 }),
     /** Extracted weight in grams from product title; NULL when unknown. */
     weightGrams: integer("weight_grams"),
+    productTitle: varchar("product_title", { length: 500 }),
+    productUrl: varchar("product_url", { length: 500 }),
     scrapedAt: timestamp("scraped_at", { withTimezone: true }).notNull(),
     /** The date the source reports (may differ from scrape date) */
     sourceDate: date("source_date").notNull(),

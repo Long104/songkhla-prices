@@ -16,9 +16,9 @@ async function seedFixtures() {
   ]);
   await db.insert(provinces).values([{ id: 100, code: "90", nameTh: "สงขลา", nameEn: "Songkhla" }]);
   await db.insert(prices).values([
-    { productId: 100, sourceId: 100, price: "150", unit: "บาท/กก.", sourceDate: "2026-08-13", scrapedAt: new Date("2026-08-13T10:00:00Z") },
-    { productId: 100, sourceId: 100, provinceId: 100, price: "160", unit: "บาท/กก.", sourceDate: "2026-08-14", scrapedAt: new Date("2026-08-14T10:00:00Z") },
-    { productId: 101, sourceId: 100, price: "80", unit: "บาท/กก.", sourceDate: "2026-08-14", scrapedAt: new Date("2026-08-14T10:00:00Z") },
+    { productId: 100, sourceId: 100, price: "150", unit: "บาท/กก.", sourceDate: "2026-08-13", scrapedAt: new Date("2026-08-13T10:00:00Z"), productTitle: "หมูสามชั้น", productUrl: "https://dit.go.th/1" },
+    { productId: 100, sourceId: 100, provinceId: 100, price: "160", unit: "บาท/กก.", sourceDate: "2026-08-14", scrapedAt: new Date("2026-08-14T10:00:00Z"), productTitle: "หมูสามชั้น สด", productUrl: "https://dit.go.th/2" },
+    { productId: 101, sourceId: 100, price: "80", unit: "บาท/กก.", sourceDate: "2026-08-14", scrapedAt: new Date("2026-08-14T10:00:00Z"), productTitle: "อกไก่", productUrl: "https://dit.go.th/3" },
   ]);
 }
 
@@ -43,6 +43,16 @@ describe("getLatestPricesForProducts parity", () => {
     const sort = (a: RawPriceRowWithProduct, b: RawPriceRowWithProduct) =>
       a.productId - b.productId || a.sourceId - b.sourceId;
     expect(batched.sort(sort)).toEqual(expected.sort(sort));
+  });
+
+  it("selects productTitle and productUrl from the latest row", async () => {
+    const rows = await getLatestPricesForProduct(db, 100, 100);
+    expect(rows).toHaveLength(1);
+    // The latest price is 160 from 2026-08-14
+    expect(rows[0].price).toBe("160.00");
+    // It must also select the metadata from that specific row
+    expect(rows[0].productTitle).toBe("หมูสามชั้น สด");
+    expect(rows[0].productUrl).toBe("https://dit.go.th/2");
   });
 
   it("returns empty array for empty productIds", async () => {

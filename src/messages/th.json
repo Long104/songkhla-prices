@@ -88,7 +88,12 @@
     "unitMultiInfo": "สินค้านี้มีหลายหน่วย เลือกสลับดูราคาตามหน่วยด้านบน",
     "cheapestInFamily": "ถูกที่สุดในกลุ่มนี้",
     "priceUp": "ราคาขึ้น {pct}%",
-    "priceDown": "ราคาลง {pct}%"
+    "priceDown": "ราคาลง {pct}%",
+    "viewAtStore": "ดูราคาที่ร้าน",
+    "variantLabel": "ประเภท: {variant}",
+    "fresh": "สด",
+    "chilled": "แช่เย็น",
+    "frozen": "แช่แข็ง"
   },
   "search": {
     "title": "ค้นหาสินค้า",

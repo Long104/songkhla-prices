@@ -14,6 +14,7 @@ import { DEFAULT_PROVINCE_CODE } from "@/lib/provinces";
 import { getProvinceIdByCodeCached, getLatestPricesForProductCached, getAllPricesForProductCached } from "@/db/cached-queries";
 import { computePriceChanges } from "@/lib/price-changes";
 import { formatDate } from "@/lib/utils";
+import { mapRawPricesToPriceRows } from "@/lib/price-row-mapping";
 
 export default async function ProductPage({
   params,
@@ -54,25 +55,7 @@ export default async function ProductPage({
         const allPrices = await getAllPricesForProductCached(productRow.id, provinceId);
         const priceChangesMap = computePriceChanges(allPrices);
 
-        priceRows = rawPrices.map((r) => {
-          const key = `${r.sourceSlug}::${r.unit}`;
-          const changePct = priceChangesMap.get(key)?.changePct ?? null;
-          return {
-            productName: productRow.nameTh,
-            sourceSlug: r.sourceSlug,
-            sourceNameTh: r.sourceNameTh,
-            sourceNameEn: r.sourceNameEn ?? "",
-            sourceType: r.sourceType,
-            price: r.price,
-            unit: r.unit,
-            normalizedPrice: r.normalizedPrice,
-            normalizedUnit: r.normalizedUnit,
-            weightGrams: r.weightGrams,
-            sourceDate: r.sourceDate,
-            isNational: r.provinceId === null,
-            changePct,
-          };
-        });
+        priceRows = mapRawPricesToPriceRows(rawPrices, productRow.nameTh, priceChangesMap);
       }
     }
   } catch {
